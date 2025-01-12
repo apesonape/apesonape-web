@@ -6,9 +6,17 @@ import { Raleway } from 'next/font/google';
 
 const raleway = Raleway({ subsets: ['latin'] });
 
+// Add a cache-busting timestamp
+const timestamp = Date.now();
+
 const NFTLandingPage = () => {
   const contractAddress = "0xa6bAbE18F2318D2880DD7dA3126C19536048F8B0";
   const [showCopyFeedback, setShowCopyFeedback] = useState(false);
+
+  const getImagePath = (path: string) => {
+    const base = process.env.NODE_ENV === 'production' ? '/apesonape-web' : '';
+    return `${base}${path}?v=${timestamp}`;
+  };
 
   const copyToClipboard = async () => {
     try {
@@ -39,7 +47,7 @@ const NFTLandingPage = () => {
         {/* Left side - Hero Image */}
         <div className="flex-1">
           <img 
-            src={`${process.env.NODE_ENV === 'production' ? '/apesonape-web' : ''}/AoA-placeholder-apecoinblue.jpg`}
+            src={getImagePath('/AoA-placeholder-apecoinblue.jpg')}
             alt="NFT Hero"
             className="absolute bottom-0 left-0 w-3/4 h-auto object-contain object-bottom"
           />
@@ -58,7 +66,7 @@ const NFTLandingPage = () => {
               >
                 <div className="flex items-center gap-3">
                   <img 
-                    src={`${process.env.NODE_ENV === 'production' ? '/apesonape-web' : ''}/magiceden_icon.jpeg`}
+                    src={getImagePath('/magiceden_icon.jpeg')}
                     alt="Magic Eden" 
                     className="w-6 h-6"
                   />
@@ -75,7 +83,7 @@ const NFTLandingPage = () => {
               >
                 <div className="flex items-center gap-3">
                   <img 
-                    src={`${process.env.NODE_ENV === 'production' ? '/apesonape-web' : ''}/mintify_icon.jpeg`}
+                    src={getImagePath('/mintify_icon.jpeg')}
                     alt="Mintify" 
                     className="w-6 h-6"
                   />
@@ -112,7 +120,7 @@ const NFTLandingPage = () => {
                     title="View on Apescan"
                   >
                     <img 
-                      src={`${process.env.NODE_ENV === 'production' ? '/apesonape-web' : ''}/chain-light.svg`}
+                      src={getImagePath('/chain-light.svg')}
                       alt="View on Apescan"
                       className="w-5 h-5"
                     />
@@ -132,7 +140,7 @@ const NFTLandingPage = () => {
             className="w-10 h-10 flex items-center justify-center hover:bg-black/10 rounded-full transition-colors bg-black/5 backdrop-blur-sm"
           >
             <img 
-              src={`${process.env.NODE_ENV === 'production' ? '/apesonape-web' : ''}/x-white.png`}
+              src={getImagePath('/x-white.png')}
               alt="Follow us on X"
               className="w-5 h-5"
             />
@@ -144,7 +152,7 @@ const NFTLandingPage = () => {
             className="w-10 h-10 flex items-center justify-center hover:bg-black/10 rounded-full transition-colors bg-black/5 backdrop-blur-sm"
           >
             <img 
-              src={`${process.env.NODE_ENV === 'production' ? '/apesonape-web' : ''}/discord-white.png`}
+              src={getImagePath('/discord-white.png')}
               alt="Join our Discord"
               className="w-6 h-5"
             />
@@ -154,7 +162,7 @@ const NFTLandingPage = () => {
         {/* Bottom centered logo */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
           <img 
-            src={`${process.env.NODE_ENV === 'production' ? '/apesonape-web' : ''}/apechain.png`}
+            src={getImagePath('/apechain.png')}
             alt="Apechain Logo"
             className="h-8 w-auto"
           />
