@@ -1,15 +1,15 @@
 import type { NextConfig } from "next";
 
-const isProduction = process.env.NODE_ENV === 'production';
-
 const nextConfig: NextConfig = {
   output: 'export',
   distDir: 'docs',
-  basePath: isProduction ? '/apesonape-web' : '',
-  assetPrefix: isProduction ? '/apesonape-web' : '',
+  basePath: '/apesonape-web',
+  assetPrefix: '/apesonape-web/',
   images: {
     unoptimized: true,
   },
+  // Ensure proper static export
+  trailingSlash: true,
 };
 
 export default nextConfig;

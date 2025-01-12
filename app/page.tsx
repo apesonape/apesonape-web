@@ -38,21 +38,21 @@ const NFTLandingPage = () => {
   };
 
   return (
-    <main className={`min-h-screen bg-hero-blue text-black relative ${raleway.className}`}>
+    <div className={`fixed inset-0 min-h-[500px] bg-hero-blue text-black overflow-y-auto ${raleway.className}`}>
       {/* Main container */}
-      <div className="min-h-screen w-full relative">
+      <div className="h-full w-full flex justify-between relative">
         {/* Left side - Hero Image */}
-        <div className="absolute bottom-0 left-0 w-3/4 h-full">
+        <div className="flex-1">
           <img 
             src={getImagePath('/AoA-placeholder-apecoinblue.jpg')}
             alt="NFT Hero"
-            className="absolute bottom-0 left-0 w-full h-auto object-contain object-bottom"
+            className="absolute bottom-0 left-0 w-3/4 h-auto object-contain object-bottom"
           />
         </div>
         
         {/* Right side - Content */}
-        <div className="absolute right-0 min-w-[400px] w-1/3 top-[15%] p-8">
-          <div className="bg-black/10 backdrop-blur-sm p-8">
+        <div className="absolute right-0 min-w-[400px] w-1/3 md:h-[73%] h-[75%] p-8">
+          <div className="bg-black/10 backdrop-blur-sm h-full p-8">
             {/* Marketplace Links */}
             <div className="space-y-4 mb-12">
               <a 
@@ -165,7 +165,7 @@ const NFTLandingPage = () => {
           />
         </div>
       </div>
-    </main>
+    </div>
   );
 };
 
