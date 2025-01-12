@@ -11,8 +11,7 @@ const NFTLandingPage = () => {
   const [showCopyFeedback, setShowCopyFeedback] = useState(false);
 
   const getImagePath = (path: string) => {
-    const base = process.env.NODE_ENV === 'production' ? '/apesonape-web' : '';
-    return `${base}${path}`;
+    return path;
   };
 
   const copyToClipboard = async () => {
@@ -45,7 +44,7 @@ const NFTLandingPage = () => {
         <div className="flex-1">
           <img 
             src={getImagePath('/AoA-placeholder-apecoinblue.jpg')}
-            alt="NFT Hero"
+            alt="Apes on Ape"
             className="absolute bottom-0 left-0 w-3/4 h-auto object-contain object-bottom"
           />
         </div>
