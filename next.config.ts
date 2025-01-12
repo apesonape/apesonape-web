@@ -6,12 +6,12 @@ const nextConfig: NextConfig = {
   output: 'export',
   distDir: 'docs',
   basePath: isProduction ? '/apesonape-web' : '',
-  assetPrefix: isProduction ? '/apesonape-web' : '',
   images: {
     unoptimized: true,
   },
-  // This ensures index.html is generated at the root
-  trailingSlash: true,
+  // Static export settings
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
 };
 
 export default nextConfig;
