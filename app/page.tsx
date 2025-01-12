@@ -6,16 +6,13 @@ import { Raleway } from 'next/font/google';
 
 const raleway = Raleway({ subsets: ['latin'] });
 
-// Add a cache-busting timestamp
-const timestamp = Date.now();
-
 const NFTLandingPage = () => {
   const contractAddress = "0xa6bAbE18F2318D2880DD7dA3126C19536048F8B0";
   const [showCopyFeedback, setShowCopyFeedback] = useState(false);
 
   const getImagePath = (path: string) => {
     const base = process.env.NODE_ENV === 'production' ? '/apesonape-web' : '';
-    return `${base}${path}?v=${timestamp}`;
+    return `${base}${path}`;
   };
 
   const copyToClipboard = async () => {
@@ -41,21 +38,21 @@ const NFTLandingPage = () => {
   };
 
   return (
-    <div className={`fixed inset-0 min-h-[500px] bg-hero-blue text-black overflow-y-auto ${raleway.className}`}>
+    <main className={`min-h-screen bg-hero-blue text-black relative ${raleway.className}`}>
       {/* Main container */}
-      <div className="h-full w-full flex justify-between relative">
+      <div className="min-h-screen w-full relative">
         {/* Left side - Hero Image */}
-        <div className="flex-1">
+        <div className="absolute bottom-0 left-0 w-3/4 h-full">
           <img 
             src={getImagePath('/AoA-placeholder-apecoinblue.jpg')}
             alt="NFT Hero"
-            className="absolute bottom-0 left-0 w-3/4 h-auto object-contain object-bottom"
+            className="absolute bottom-0 left-0 w-full h-auto object-contain object-bottom"
           />
         </div>
         
         {/* Right side - Content */}
-        <div className="absolute right-0 min-w-[400px] w-1/3 md:h-[73%] h-[75%] p-8">
-          <div className="bg-black/10 backdrop-blur-sm h-full p-8">
+        <div className="absolute right-0 min-w-[400px] w-1/3 top-[15%] p-8">
+          <div className="bg-black/10 backdrop-blur-sm p-8">
             {/* Marketplace Links */}
             <div className="space-y-4 mb-12">
               <a 
@@ -168,7 +165,7 @@ const NFTLandingPage = () => {
           />
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 
