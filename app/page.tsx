@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ExternalLink, Copy, Check } from 'lucide-react';
 import { Raleway } from 'next/font/google';
+import { SiApplearcade } from "react-icons/si";
 
 const raleway = Raleway({ subsets: ['latin'] });
 
@@ -84,6 +85,19 @@ const NFTLandingPage = () => {
                     className="w-6 h-6"
                   />
                   <span className="font-medium text-white">Mintify</span>
+                </div>
+                <ExternalLink className="w-5 h-5 text-white" />
+              </a>
+              
+              <a 
+                href="https://arcade.apesonape.io" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between bg-black/10 hover:bg-black/15 p-4 transition-all duration-300"
+              >
+                <div className="flex items-center gap-3">
+                  <SiApplearcade className="w-6 h-6 text-white" />
+                  <span className="font-medium text-white">Arcade</span>
                 </div>
                 <ExternalLink className="w-5 h-5 text-white" />
               </a>
