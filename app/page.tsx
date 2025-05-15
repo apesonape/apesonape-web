@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ExternalLink, Copy, Check } from 'lucide-react';
 import { Raleway } from 'next/font/google';
-import { SiApplearcade } from "react-icons/si";
+import { SiApplearcade, SiSoundcloud } from "react-icons/si";
 
 const raleway = Raleway({ subsets: ['latin'] });
 
@@ -98,6 +98,18 @@ const NFTLandingPage = () => {
                 <div className="flex items-center gap-3">
                   <SiApplearcade className="w-6 h-6 text-white" />
                   <span className="font-medium text-white">Arcade</span>
+                </div>
+                <ExternalLink className="w-5 h-5 text-white" />
+              </a>
+              <a 
+                href="https://soundcloud.com/apesonape" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between bg-black/10 hover:bg-black/15 p-4 transition-all duration-300"
+              >
+                <div className="flex items-center gap-3">
+                  <SiSoundcloud className="w-6 h-6 text-white" />
+                  <span className="font-medium text-white">SoundCloud</span>
                 </div>
                 <ExternalLink className="w-5 h-5 text-white" />
               </a>
