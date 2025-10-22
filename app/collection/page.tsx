@@ -1,64 +1,127 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ExternalLink, Heart, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import { magicEdenAPI, MagicEdenNFT } from '@/lib/magic-eden';
-import ResponsiveNFTGrid from '@/app/components/ResponsiveNFTGrid';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { Search, Filter, TrendingUp, Users, Layers, ExternalLink, ShoppingBag } from 'lucide-react';
+import Nav from '../components/Nav';
+import Footer from '../components/Footer';
+import NFTCard from '../components/NFTCard';
+import TokenDrawer from '../components/TokenDrawer';
+import { MagicEdenNFT } from '@/lib/magic-eden';
 
-const CollectionPage = () => {
+interface CollectionStats {
+  floorPrice: number;
+  listedCount: number;
+  totalSupply: number;
+  uniqueHolders: number;
+  volume24hr: number;
+}
+
+export default function CollectionPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  // State
   const [nfts, setNfts] = useState<MagicEdenNFT[]>([]);
   const [filteredNFTs, setFilteredNFTs] = useState<MagicEdenNFT[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [displayedNFTs, setDisplayedNFTs] = useState<MagicEdenNFT[]>([]);
+  const [stats, setStats] = useState<CollectionStats | null>(null);
   const [selectedNFT, setSelectedNFT] = useState<MagicEdenNFT | null>(null);
-  const [sortBy, setSortBy] = useState<'rarity' | 'price' | 'name'>('rarity');
-  const [priceRange, setPriceRange] = useState([0, 10]);
-  const [selectedTraits, setSelectedTraits] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  // Load NFTs on component mount
+  // Filters from URL
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [sortBy, setSortBy] = useState<'rarity' | 'price-asc' | 'price-desc' | 'name'>(
+    (searchParams.get('sort') as 'rarity' | 'price-asc' | 'price-desc' | 'name') || 'rarity'
+  );
+  const [selectedTraits, setSelectedTraits] = useState<string[]>(
+    searchParams.get('traits')?.split(',').filter(Boolean) || []
+  );
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    parseFloat(searchParams.get('minPrice') || '0'),
+    parseFloat(searchParams.get('maxPrice') || '10'),
+  ]);
+
+  const itemsPerPage = 24;
+
+  // Available traits for filtering
+  const availableTraits = [
+    'Golden', 'Silver', 'Blue', 'Red', 'Crown', 'Chain', 
+    'Hat', 'Space', 'Forest', 'City', 'Ocean', 'Laser'
+  ];
+
+  // Update URL with filters
+  const updateURL = useCallback(() => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.set('search', searchTerm);
+    if (sortBy !== 'rarity') params.set('sort', sortBy);
+    if (selectedTraits.length > 0) params.set('traits', selectedTraits.join(','));
+    if (priceRange[0] !== 0) params.set('minPrice', priceRange[0].toString());
+    if (priceRange[1] !== 10) params.set('maxPrice', priceRange[1].toString());
+    
+    router.push(`/collection?${params.toString()}`, { scroll: false });
+  }, [searchTerm, sortBy, selectedTraits, priceRange, router]);
+
+  // Load NFTs and stats
   useEffect(() => {
-    const loadNFTs = async () => {
+    const loadData = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        setError(null);
-        const fetchedNFTs = await magicEdenAPI.getRandomNFTs(100);
-        setNfts(fetchedNFTs);
-      } catch (err) {
-        setError('Failed to load NFTs. Using mock data.');
-        console.error('Error loading NFTs:', err);
-        // Fallback to mock data
-        const mockNFTs = await magicEdenAPI.getMockNFTs(100);
-        setNfts(mockNFTs);
+        // Load NFTs
+        const nftsResponse = await fetch('/api/me/tokens?limit=150');
+        const nftsData = await nftsResponse.json();
+        setNfts(nftsData.tokens || []);
+
+        // Load stats
+        const statsResponse = await fetch('/api/me/stats');
+        const statsData = await statsResponse.json();
+        setStats(statsData);
+      } catch (error) {
+        console.error('Error loading collection data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadNFTs();
+    loadData();
   }, []);
 
+  // Apply filters and sorting
   useEffect(() => {
-    let filtered = nfts.filter(nft => 
-      nft.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      nft.price >= priceRange[0] &&
-      nft.price <= priceRange[1]
+    let filtered = [...nfts];
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(nft =>
+        nft.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Price range filter
+    filtered = filtered.filter(nft =>
+      nft.price >= priceRange[0] && nft.price <= priceRange[1]
     );
 
+    // Traits filter
     if (selectedTraits.length > 0) {
       filtered = filtered.filter(nft => 
         nft.traits.some(trait => selectedTraits.includes(trait.value))
       );
     }
 
+    // Sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'rarity':
           return a.rarity - b.rarity;
-        case 'price':
+        case 'price-asc':
           return a.price - b.price;
+        case 'price-desc':
+          return b.price - a.price;
         case 'name':
           return a.name.localeCompare(b.name);
         default:
@@ -67,7 +130,44 @@ const CollectionPage = () => {
     });
 
     setFilteredNFTs(filtered);
-  }, [nfts, searchTerm, priceRange, selectedTraits, sortBy]);
+    setPage(1);
+    setDisplayedNFTs(filtered.slice(0, itemsPerPage));
+    setHasMore(filtered.length > itemsPerPage);
+  }, [nfts, searchTerm, sortBy, selectedTraits, priceRange]);
+
+  // Infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          const nextPage = page + 1;
+          const start = nextPage * itemsPerPage;
+          const end = start + itemsPerPage;
+          const newItems = filteredNFTs.slice(start, end);
+          
+          if (newItems.length > 0) {
+            setDisplayedNFTs(prev => [...prev, ...newItems]);
+            setPage(nextPage);
+            setHasMore(end < filteredNFTs.length);
+          } else {
+            setHasMore(false);
+          }
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [page, hasMore, loading, filteredNFTs]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    updateURL();
+  }, [updateURL]);
 
   const toggleTrait = (trait: string) => {
     setSelectedTraits(prev => 
@@ -77,99 +177,233 @@ const CollectionPage = () => {
     );
   };
 
-  const getRarityColor = (rarity: number) => {
-    if (rarity <= 10) return 'text-red-400';
-    if (rarity <= 50) return 'text-orange-400';
-    if (rarity <= 100) return 'text-yellow-400';
-    return 'text-gray-400';
-  };
-
-  const getRarityLabel = (rarity: number) => {
-    if (rarity <= 10) return 'Legendary';
-    if (rarity <= 50) return 'Epic';
-    if (rarity <= 100) return 'Rare';
-    return 'Common';
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSortBy('rarity');
+    setSelectedTraits([]);
+    setPriceRange([0, 10]);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-hero-blue via-purple-900 to-black text-white">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-[url('/casino-bg.png')] bg-cover bg-center opacity-10" />
-      <div className="absolute inset-0 bg-gradient-to-br from-hero-blue/20 via-purple-900/30 to-black/60" />
-      
-      {/* Navigation */}
-      <nav className="relative z-50 p-6">
-        <div className="flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
-            <img 
-              src="/apechain.png"
-              alt="Apechain Logo"
-              className="h-8 w-auto"
-            />
-            <span className="text-xl font-bold text-ape-gold">Apes On Ape</span>
-          </Link>
-          
-          <div className="flex items-center gap-4">
-            <Link 
-              href="/"
-              className="px-4 py-2 bg-ape-gold/20 hover:bg-ape-gold/30 rounded-lg transition-colors border border-ape-gold/30"
-            >
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen" style={{ color: 'var(--foreground)', background: 'var(--background)' }}>
+      <Nav />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
+      <div className="pt-24 pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header with Stats */}
         <motion.div 
-          className="text-center mb-8"
-          initial={{ opacity: 0, y: -20 }}
+            className="mb-12"
+            initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-ape-gold to-yellow-400 bg-clip-text text-transparent">
+            <h1 className="section-heading mb-6 text-center" style={{ color: 'var(--foreground)' }}>
             Collection Gallery
           </h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Explore the complete Apes On Ape collection. {nfts.length} unique NFTs available.
-          </p>
+            
+            {/* Stats Grid */}
+            {stats && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="glass-dark rounded-xl p-4 text-center">
+                  <Layers className="w-6 h-6 text-neon-cyan mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-neon-cyan">
+                    {stats.totalSupply}
+                  </p>
+                  <p className="text-sm" style={{ color: 'var(--ape-gray)' }}>Total Supply</p>
+                </div>
+                <div className="glass-dark rounded-xl p-4 text-center">
+                  <Users className="w-6 h-6 text-neon-green mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-neon-green">
+                    {stats.uniqueHolders}
+                  </p>
+                  <p className="text-sm" style={{ color: 'var(--ape-gray)' }}>Owners</p>
+                </div>
+                <div className="glass-dark rounded-xl p-4 text-center">
+                  <TrendingUp className="w-6 h-6 text-ape-gold mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-ape-gold">
+                    {stats.floorPrice.toFixed(2)} APE
+                  </p>
+                  <p className="text-sm" style={{ color: 'var(--ape-gray)' }}>Floor Price</p>
+                </div>
+                <div className="glass-dark rounded-xl p-4 text-center">
+                  <Filter className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-purple-400">
+                    {stats.listedCount}
+                  </p>
+                  <p className="text-sm" style={{ color: 'var(--ape-gray)' }}>Listed</p>
+                </div>
+              </div>
+            )}
+
+            {/* Marketplace Links */}
+            <motion.div
+              className="mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.6 }}
+            >
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <ShoppingBag className="w-5 h-5 text-hero-blue" />
+                <h2 className="text-xl font-semibold" style={{ color: 'var(--foreground)' }}>
+                  Marketplaces
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Magic Eden */}
+                <a
+                  href="https://magiceden.io/collections/apechain/0xa6babe18f2318d2880dd7da3126c19536048f8b0"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="glass-dark rounded-xl p-6 flex items-center justify-between group hover:border-hero-blue/70 transition-all duration-300 hover:shadow-lg hover:shadow-hero-blue/20"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-hero-blue/10 flex items-center justify-center group-hover:bg-hero-blue/20 transition-colors">
+                      <img 
+                        src="/magiceden_icon.jpeg" 
+                        alt="Magic Eden" 
+                        className="w-8 h-8 rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg" style={{ color: 'var(--foreground)' }}>
+                        Magic Eden
+                      </h3>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-hero-blue opacity-0 group-hover:opacity-100 transition-opacity" />
+                </a>
+
+                {/* Mintify */}
+                <a
+                  href="https://app.mintify.com/nft/apechain/0xa6babe18f2318d2880dd7da3126c19536048f8b0"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="glass-dark rounded-xl p-6 flex items-center justify-between group hover:border-hero-blue/70 transition-all duration-300 hover:shadow-lg hover:shadow-hero-blue/20"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-ape-gold/10 flex items-center justify-center group-hover:bg-ape-gold/20 transition-colors">
+                      <img 
+                        src="/mintify_icon.jpeg" 
+                        alt="Mintify" 
+                        className="w-8 h-8 rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg" style={{ color: 'var(--foreground)' }}>
+                        Mintify
+                      </h3>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-ape-gold opacity-0 group-hover:opacity-100 transition-opacity" />
+                </a>
+
+                {/* OpenSea */}
+                <a
+                  href="https://opensea.io/collection/apes-on-apechain"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="glass-dark rounded-xl p-6 flex items-center justify-between group hover:border-hero-blue/70 transition-all duration-300 hover:shadow-lg hover:shadow-hero-blue/20"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center overflow-hidden group-hover:bg-blue-500/20 transition-colors">
+                      <img
+                        src="/opensea-logo.webp"
+                        alt="OpenSea"
+                        className="w-8 h-8 object-contain"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg" style={{ color: 'var(--foreground)' }}>
+                        OpenSea
+                      </h3>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </a>
+              </div>
+            </motion.div>
         </motion.div>
 
-        {/* Filters and Search */}
+          {/* Placeholder below Marketplaces */}
+          <motion.div
+            className="glass-dark rounded-xl p-12 text-center mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
+              Coming Soon...
+            </p>
+            <p className="mt-2" style={{ color: 'var(--ape-gray)' }}>
+              The collection viewer is being upgraded.
+            </p>
+          </motion.div>
+
+          {/* Filters */}
+        {false && (
         <motion.div 
-          className="bg-black/30 backdrop-blur-md rounded-2xl p-6 mb-8 border border-ape-gold/30"
+            className="glass-dark rounded-xl p-6 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
         >
-          <div className="grid md:grid-cols-4 gap-4">
+            <div className="flex flex-col lg:flex-row gap-6">
             {/* Search */}
+              <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search NFTs..."
+                    placeholder="Search by name or ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-black/20 border border-ape-gold/30 rounded-lg text-white placeholder-gray-400 focus:border-ape-gold/50 focus:outline-none"
+                    className="w-full pl-10 pr-4 py-3 glass border border-white/10 rounded-lg placeholder-gray-400 focus:border-hero-blue focus:outline-none transition-colors"
+                    style={{ color: 'var(--foreground)' }}
               />
+                </div>
             </div>
 
             {/* Sort */}
+              <div>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'rarity' | 'price' | 'name')}
-              className="px-4 py-3 bg-black/20 border border-ape-gold/30 rounded-lg text-white focus:border-ape-gold/50 focus:outline-none"
+                  onChange={(e) => setSortBy(e.target.value as 'rarity' | 'price-asc' | 'price-desc' | 'name')}
+                  className="w-full px-4 py-3 glass border border-white/10 rounded-lg focus:border-hero-blue focus:outline-none transition-colors cursor-pointer"
+                  style={{ color: 'var(--foreground)' }}
             >
               <option value="rarity">Sort by Rarity</option>
-              <option value="price">Sort by Price</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
               <option value="name">Sort by Name</option>
             </select>
+              </div>
+
+              {/* Clear Filters */}
+              {(searchTerm || sortBy !== 'rarity' || selectedTraits.length > 0 || priceRange[0] !== 0 || priceRange[1] !== 10) && (
+                <button
+                  onClick={clearFilters}
+                  className="btn-secondary whitespace-nowrap"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
 
             {/* Price Range */}
-            <div>
-              <label className="block text-sm text-gray-300 mb-2">Price Range: {priceRange[0]} - {priceRange[1]} APE</label>
+            <div className="mt-6">
+              <label className="text-sm mb-2 block" style={{ color: 'var(--ape-gray)' }}>
+                Price Range: {priceRange[0]} - {priceRange[1]} APE
+              </label>
+              <div className="flex gap-4 items-center">
+                <input
+                  type="range"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={priceRange[0]}
+                  onChange={(e) => setPriceRange([parseFloat(e.target.value), priceRange[1]])}
+                  className="flex-1 h-2 bg-charcoal-light rounded-lg appearance-none cursor-pointer accent-neon-cyan"
+                />
               <input
                 type="range"
                 min="0"
@@ -177,24 +411,23 @@ const CollectionPage = () => {
                 step="0.1"
                 value={priceRange[1]}
                 onChange={(e) => setPriceRange([priceRange[0], parseFloat(e.target.value)])}
-                className="w-full"
+                  className="flex-1 h-2 bg-charcoal-light rounded-lg appearance-none cursor-pointer accent-neon-cyan"
               />
             </div>
-
           </div>
 
           {/* Trait Filters */}
           <div className="mt-6">
-            <h3 className="text-lg font-semibold text-ape-gold mb-3">Filter by Traits</h3>
+              <h3 className="text-sm mb-3" style={{ color: 'var(--ape-gray)' }}>Filter by Traits</h3>
             <div className="flex flex-wrap gap-2">
-              {['Golden', 'Silver', 'Blue', 'Red', 'Crown', 'Chain', 'Hat', 'Space', 'Forest', 'City', 'Ocean'].map(trait => (
+                {availableTraits.map(trait => (
                 <button
                   key={trait}
                   onClick={() => toggleTrait(trait)}
-                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${
                     selectedTraits.includes(trait)
-                      ? 'bg-ape-gold/20 text-ape-gold border border-ape-gold/50'
-                      : 'bg-black/20 text-gray-300 border border-ape-gold/30 hover:bg-ape-gold/10'
+                        ? 'bg-neon-cyan/20 text-neon-cyan border-2 border-neon-cyan'
+                        : 'glass border-2 border-white/10 hover:border-hero-blue/50'
                   }`}
                 >
                   {trait}
@@ -203,135 +436,88 @@ const CollectionPage = () => {
             </div>
           </div>
         </motion.div>
+        )}
 
-        {/* Loading State */}
-        {loading && (
+          {/* Results Count */}
+          {false && (
           <motion.div 
-            className="flex items-center justify-center py-20"
+            className="mb-6 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
+            transition={{ delay: 0.3 }}
           >
-            <div className="text-center">
-              <Loader2 className="w-12 h-12 text-ape-gold animate-spin mx-auto mb-4" />
-              <p className="text-gray-300">Loading NFTs from Magic Eden...</p>
-            </div>
+            <p style={{ color: 'var(--ape-gray)' }}>
+              Showing <span className="text-hero-blue font-semibold">{displayedNFTs.length}</span> of{' '}
+              <span className="text-hero-blue font-semibold">{filteredNFTs.length}</span> NFTs
+            </p>
           </motion.div>
-        )}
+          )}
 
-        {/* Error State */}
-        {error && (
-          <motion.div 
-            className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-8"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <p className="text-red-400">{error}</p>
-          </motion.div>
-        )}
-
-        {/* NFT Grid/List */}
-        {!loading && (
-          <ResponsiveNFTGrid 
-            nfts={filteredNFTs}
-            loading={loading}
-            onNFTSelect={setSelectedNFT}
-          />
-        )}
-
-        {/* Results Count */}
-        {!loading && (
-          <motion.div 
-            className="text-center mt-8 text-gray-400"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
-          >
-            Showing {filteredNFTs.length} of {nfts.length} NFTs
-          </motion.div>
-        )}
-      </div>
-
-      {/* NFT Detail Modal */}
-      <AnimatePresence>
-        {selectedNFT && (
-          <motion.div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedNFT(null)}
-          >
-            <motion.div
-              className="bg-gradient-to-br from-black/90 to-purple-900/90 p-8 rounded-2xl border border-ape-gold/30 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <img 
-                    src={selectedNFT.image} 
-                    alt={selectedNFT.name}
-                    className="w-full h-64 object-cover rounded-lg mb-4"
-                  />
-                </div>
-                <div>
-                  <h3 className="text-3xl font-bold text-ape-gold mb-4">{selectedNFT.name}</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <span className="text-ape-gold font-semibold">Price:</span>
-                      <span className="text-white ml-2">{selectedNFT.price.toFixed(2)} {selectedNFT.currency}</span>
-                    </div>
-                    <div>
-                      <span className="text-ape-gold font-semibold">Rarity:</span>
-                      <span className={`ml-2 ${getRarityColor(selectedNFT.rarity)}`}>
-                        #{selectedNFT.rarity} {getRarityLabel(selectedNFT.rarity)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-ape-gold font-semibold">Traits:</span>
-                      <div className="mt-2 space-y-1">
-                        {selectedNFT.traits.map((trait, index) => (
-                          <div key={index} className="flex justify-between">
-                            <span className="text-gray-300">{trait.name}:</span>
-                            <span className="text-white">{trait.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex gap-4 pt-4">
-                      <a
-                        href={selectedNFT.magicEdenUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 bg-ape-gold hover:bg-ape-gold/80 text-black px-6 py-3 rounded-lg font-semibold transition-colors"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        View on Magic Eden
-                      </a>
-                      <button className="flex items-center gap-2 bg-ape-gold/20 hover:bg-ape-gold/30 text-ape-gold px-6 py-3 rounded-lg font-semibold transition-colors border border-ape-gold/30">
-                        <Heart className="w-4 h-4" />
-                        Favorite
-                      </button>
-                    </div>
-                  </div>
+          {/* Loading State */}
+          {false && (
+            loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-neon-cyan/30 border-t-neon-cyan rounded-full animate-spin mx-auto mb-4"></div>
+                  <p style={{ color: 'var(--ape-gray)' }}>Loading collection...</p>
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedNFT(null)}
-                className="mt-6 w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg font-semibold transition-colors"
-              >
-                Close
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            ) : (
+              <>
+                {/* NFT Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-6">
+                  {displayedNFTs.map((nft, index) => (
+                    <NFTCard
+                      key={`${nft.id}-${index}`}
+                      nft={nft}
+                      onClick={() => setSelectedNFT(nft)}
+                      index={index}
+                    />
+                  ))}
+                </div>
+
+                {/* Infinite Scroll Observer */}
+                {hasMore && (
+                  <div ref={observerTarget} className="flex justify-center py-8">
+                    <div className="w-12 h-12 border-4 border-neon-cyan/30 border-t-neon-cyan rounded-full animate-spin"></div>
+                  </div>
+                )}
+
+                {/* End of Results */}
+                {!hasMore && filteredNFTs.length > 0 && (
+                  <motion.div 
+                    className="text-center py-12"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <p style={{ color: 'var(--ape-gray)' }}>You&apos;ve reached the end of the collection</p>
+                  </motion.div>
+                )}
+
+                {/* No Results */}
+                {filteredNFTs.length === 0 && (
+                  <motion.div 
+                    className="text-center py-20"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                  >
+                    <p className="text-2xl mb-4" style={{ color: 'var(--foreground)' }}>No NFTs found</p>
+                    <p className="mb-6" style={{ color: 'var(--ape-gray)' }}>
+                      Try adjusting your filters to see more results
+                    </p>
+                    <button onClick={clearFilters} className="btn-primary">
+                      Clear All Filters
+                    </button>
+                  </motion.div>
+                )}
+              </>
+            )
+          )}
+        </div>
+      </div>
+
+      <Footer />
+      <TokenDrawer nft={selectedNFT} onClose={() => setSelectedNFT(null)} />
     </div>
   );
-};
-
-export default CollectionPage;
+}

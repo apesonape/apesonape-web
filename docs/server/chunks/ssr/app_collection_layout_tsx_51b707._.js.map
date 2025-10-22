@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 7, "column": 0}, "map": {"version":3,"sources":["file://C%3A/Users/sebas/Documents/Git%20Projects/apesonape-web/app/collection/layout.tsx"],"sourcesContent":["import type { Metadata } from \"next\";\r\n\r\nexport const metadata: Metadata = {\r\n  title: \"Collection Gallery | Apes On Ape\",\r\n  description: \"Explore the complete Apes On Ape NFT collection on Apechain. Filter by traits, price, and rarity. Discover unique apes and join the community.\",\r\n  openGraph: {\r\n    title: \"Collection Gallery | Apes On Ape\",\r\n    description: \"Explore the complete Apes On Ape NFT collection on Apechain.\",\r\n    images: [\"/AoA-placeholder-apecoinblue.jpg\"],\r\n  },\r\n};\r\n\r\nexport default function CollectionLayout({\r\n  children,\r\n}: {\r\n  children: React.ReactNode;\r\n}) {\r\n  return children;\r\n}\r\n\r\n"],"names":[],"mappings":";;;;AAEO,MAAM,WAAqB;IAChC,OAAO;IACP,aAAa;IACb,WAAW;QACT,OAAO;QACP,aAAa;QACb,QAAQ;YAAC;SAAmC;IAC9C;AACF;AAEe,SAAS,iBAAiB,EACvC,QAAQ,EAGT;IACC,OAAO;AACT"}},
+    {"offset": {"line": 25, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}}]
+}

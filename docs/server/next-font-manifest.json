@@ -1,0 +1,22 @@
+{
+  "app": {
+    "[project]/app/page": [
+      "static/media/1Ptug8zYS_SKggPNyC0IT4ttDfA-s.p.a3111b96.woff2"
+    ],
+    "[project]/app/collection/page": [
+      "static/media/1Ptug8zYS_SKggPNyC0IT4ttDfA-s.p.a3111b96.woff2"
+    ],
+    "[project]/app/_not-found/page": [
+      "static/media/1Ptug8zYS_SKggPNyC0IT4ttDfA-s.p.a3111b96.woff2"
+    ],
+    "[project]/app/team/page": [
+      "static/media/1Ptug8zYS_SKggPNyC0IT4ttDfA-s.p.a3111b96.woff2"
+    ],
+    "[project]/app/sound/page": [
+      "static/media/1Ptug8zYS_SKggPNyC0IT4ttDfA-s.p.a3111b96.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}
