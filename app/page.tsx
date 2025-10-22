@@ -81,53 +81,53 @@ const NFTLandingPage = () => {
   );
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-hero-blue via-purple-900 to-black text-white ${raleway.className}`}>
-      {/* Background Effects */}
-      <div className="fixed inset-0 bg-[url('/casino-bg.png')] bg-cover bg-center bg-no-repeat opacity-20" />
-      <div className="fixed inset-0 bg-gradient-to-br from-hero-blue/30 via-purple-900/20 to-black/50" />
+    <div className={`fixed inset-0 min-h-[500px] bg-hero-blue text-black overflow-y-auto ${raleway.className}`}>
+      {/* Background Effects - Fixed positioning to ensure it's underneath everything */}
+      <div className="fixed inset-0 bg-[url('/casino-bg.png')] bg-cover bg-center bg-no-repeat opacity-20 z-0" />
+      <div className="fixed inset-0 bg-gradient-to-br from-hero-blue/30 via-purple-900/20 to-black/50 z-0" />
       
       {/* Navigation */}
-      <nav className="relative z-50 p-4 md:p-6">
+      <nav className="absolute top-0 left-0 right-0 z-50 p-6">
         <div className="flex justify-between items-center">
           <motion.div 
-            className="flex items-center gap-2 md:gap-4"
+            className="flex items-center gap-4"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
           >
             <img 
               src={getImagePath('/apechain.png')}
               alt="Apechain Logo"
-              className="h-6 md:h-8 w-auto"
+              className="h-8 w-auto"
             />
-            <span className="text-lg md:text-xl font-bold text-ape-gold">Apes On Ape</span>
+            <span className="text-xl font-bold text-ape-gold">Apes On Ape</span>
           </motion.div>
           
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-4">
             <Link 
               href="/collection"
-              className="px-2 md:px-3 py-1 md:py-2 bg-ape-gold/20 hover:bg-ape-gold/30 rounded-lg transition-colors border border-ape-gold/30 text-ape-gold font-semibold text-xs md:text-sm"
+              className="px-4 py-2 bg-ape-gold/20 hover:bg-ape-gold/30 rounded-lg transition-colors border border-ape-gold/30 text-ape-gold font-semibold"
             >
               Collection
             </Link>
             <Link 
               href="/music"
-              className="px-2 md:px-3 py-1 md:py-2 bg-ape-gold/20 hover:bg-ape-gold/30 rounded-lg transition-colors border border-ape-gold/30 text-ape-gold font-semibold text-xs md:text-sm"
+              className="px-4 py-2 bg-ape-gold/20 hover:bg-ape-gold/30 rounded-lg transition-colors border border-ape-gold/30 text-ape-gold font-semibold"
             >
               Music
             </Link>
             <button
               onClick={toggleMusic}
-              className="p-1.5 md:p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
+              className="p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
               title="Toggle Music"
             >
-              {isPlaying ? <VolumeX className="w-3 h-3 md:w-4 md:h-4" /> : <Volume2 className="w-3 h-3 md:w-4 md:h-4" />}
+              {isPlaying ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </button>
             <button
               onClick={() => setCurrentView(currentView === 'hero' ? 'collection' : 'hero')}
-              className="p-1.5 md:p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
+              className="p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
               title="Toggle Grid View"
             >
-              <Grid3X3 className="w-3 h-3 md:w-4 md:h-4" />
+              <Grid3X3 className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -137,7 +137,7 @@ const NFTLandingPage = () => {
         {currentView === 'hero' ? (
           <motion.div
             key="hero"
-            className="w-full flex justify-between relative pt-20"
+            className="h-full w-full flex justify-between relative"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -156,9 +156,9 @@ const NFTLandingPage = () => {
         </div>
         
             {/* Right side - Content */}
-            <div className="absolute right-0 min-w-[300px] md:min-w-[400px] w-1/3 md:h-[73%] h-[75%] p-4 md:p-8">
+            <div className="absolute right-0 min-w-[400px] w-1/3 md:h-[73%] h-[75%] p-8">
               <motion.div 
-                className="bg-black/20 backdrop-blur-md h-full p-4 md:p-8 rounded-2xl border border-ape-gold/30"
+                className="bg-black/10 backdrop-blur-sm h-full p-8"
                 initial={{ x: 50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.5, duration: 0.8 }}
@@ -295,7 +295,7 @@ const NFTLandingPage = () => {
         ) : (
           <motion.div
             key="collection"
-            className="w-full p-8 pt-4"
+            className="h-full w-full p-8 pt-20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
