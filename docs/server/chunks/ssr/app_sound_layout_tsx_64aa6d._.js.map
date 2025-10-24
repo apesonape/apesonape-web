@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 7, "column": 0}, "map": {"version":3,"sources":["file://C%3A/Users/sebas/Documents/Git%20Projects/apesonape-web/app/sound/layout.tsx"],"sourcesContent":["import type { Metadata } from \"next\";\r\n\r\nexport const metadata: Metadata = {\r\n  title: \"Sound Studio | Apes On Ape\",\r\n  description: \"Listen to the sounds of Apes On Ape. Monthly spotlights, continuous radio streaming, and music from our creative community on SoundCloud.\",\r\n  openGraph: {\r\n    title: \"Sound Studio | Apes On Ape\",\r\n    description: \"Listen to the sounds of Apes On Ape. Monthly spotlights and radio streaming.\",\r\n    images: [\"/AoA-placeholder-apecoinblue.jpg\"],\r\n  },\r\n};\r\n\r\nexport default function SoundLayout({\r\n  children,\r\n}: {\r\n  children: React.ReactNode;\r\n}) {\r\n  return children;\r\n}\r\n\r\n"],"names":[],"mappings":";;;;AAEO,MAAM,WAAqB;IAChC,OAAO;IACP,aAAa;IACb,WAAW;QACT,OAAO;QACP,aAAa;QACb,QAAQ;YAAC;SAAmC;IAC9C;AACF;AAEe,SAAS,YAAY,EAClC,QAAQ,EAGT;IACC,OAAO;AACT"}},
+    {"offset": {"line": 25, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}}]
+}
