@@ -3,9 +3,46 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Play, Pause, SkipForward } from 'lucide-react';
 
+type SoundCloudTrack = { title?: string };
+
+interface SoundCloudWidgetOptions {
+  auto_play?: boolean;
+  visual?: boolean;
+  show_comments?: boolean;
+  hide_related?: boolean;
+  show_reposts?: boolean;
+  show_user?: boolean;
+  show_teaser?: boolean;
+  start_track?: number;
+}
+
+interface SoundCloudWidget {
+  bind(event: string, listener: () => void): void;
+  play(): void;
+  pause(): void;
+  next(): void;
+  isPaused(callback: (paused: boolean) => void): void;
+  setVolume(volumePercent: number): void;
+  getCurrentSound(callback: (sound: SoundCloudTrack | null) => void): void;
+  getSounds(callback: (sounds: SoundCloudTrack[]) => void): void;
+  load(url: string, options?: SoundCloudWidgetOptions): void;
+}
+
+interface SoundCloud {
+  Widget: {
+    (iframe: HTMLIFrameElement): SoundCloudWidget;
+    Events: {
+      READY: string;
+      PLAY: string;
+      PAUSE: string;
+      FINISH: string;
+    };
+  };
+}
+
 declare global {
   interface Window {
-    SC?: any;
+    SC?: SoundCloud;
   }
 }
 
@@ -13,7 +50,7 @@ const PLAYLIST_URL = 'https://soundcloud.com/apesonape/sets/sinatra-season-by-dr
 
 export default function SoundCloudPlayer() {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const widgetRef = useRef<any>(null);
+  const widgetRef = useRef<SoundCloudWidget | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTitle, setCurrentTitle] = useState<string>('');
@@ -55,7 +92,7 @@ export default function SoundCloudPlayer() {
         widget.setVolume(0);
 
         // Ensure random start within playlist length
-        widget.getSounds((sounds: any[]) => {
+        widget.getSounds((sounds: SoundCloudTrack[]) => {
           if (!Array.isArray(sounds) || sounds.length === 0) return;
           const randomIndex = Math.floor(Math.random() * sounds.length);
           widget.load(PLAYLIST_URL, {
@@ -86,7 +123,7 @@ export default function SoundCloudPlayer() {
       widget.bind(window.SC.Widget.Events.PLAY, () => {
         if (cancelled) return;
         setIsPlaying(true);
-        widget.getCurrentSound((sound: any) => setCurrentTitle(sound?.title || ''));
+        widget.getCurrentSound((sound: SoundCloudTrack | null) => setCurrentTitle(sound?.title || ''));
       });
 
       widget.bind(window.SC.Widget.Events.PAUSE, () => {
@@ -119,7 +156,8 @@ export default function SoundCloudPlayer() {
     }
 
     function ensureScript() {
-      if (window.SC && window.SC.Widget) {
+      const sc = window.SC;
+      if (sc && typeof sc.Widget === 'function') {
         initWidget();
         return;
       }
@@ -164,7 +202,7 @@ export default function SoundCloudPlayer() {
   function playRandomTrack() {
     const widget = widgetRef.current;
     if (!widget) return;
-    widget.getSounds((sounds: any[]) => {
+    widget.getSounds((sounds: SoundCloudTrack[]) => {
       if (!Array.isArray(sounds) || sounds.length === 0) return;
       const randomIndex = Math.floor(Math.random() * sounds.length);
       widget.load(PLAYLIST_URL, {

@@ -403,7 +403,7 @@ function Hero({ title = "Apes On Ape", subtitle = "A playground for musicians, a
                         }
                     }, void 0, false, {
                         fileName: "[project]/app/components/Hero.tsx",
-                        lineNumber: 35,
+                        lineNumber: 34,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["motion"].div, {
@@ -427,13 +427,13 @@ function Hero({ title = "Apes On Ape", subtitle = "A playground for musicians, a
                         }
                     }, void 0, false, {
                         fileName: "[project]/app/components/Hero.tsx",
-                        lineNumber: 47,
+                        lineNumber: 46,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/components/Hero.tsx",
-                lineNumber: 34,
+                lineNumber: 33,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["motion"].div, {
@@ -461,17 +461,17 @@ function Hero({ title = "Apes On Ape", subtitle = "A playground for musicians, a
                         className: "absolute inset-0 w-full h-full object-contain object-bottom-left"
                     }, void 0, false, {
                         fileName: "[project]/app/components/Hero.tsx",
-                        lineNumber: 69,
+                        lineNumber: 68,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/app/components/Hero.tsx",
-                    lineNumber: 68,
+                    lineNumber: 67,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/components/Hero.tsx",
-                lineNumber: 62,
+                lineNumber: 61,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -515,7 +515,7 @@ function Hero({ title = "Apes On Ape", subtitle = "A playground for musicians, a
                                 children: title
                             }, void 0, false, {
                                 fileName: "[project]/app/components/Hero.tsx",
-                                lineNumber: 95,
+                                lineNumber: 94,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["motion"].p, {
@@ -538,7 +538,7 @@ function Hero({ title = "Apes On Ape", subtitle = "A playground for musicians, a
                                 children: subtitle
                             }, void 0, false, {
                                 fileName: "[project]/app/components/Hero.tsx",
-                                lineNumber: 105,
+                                lineNumber: 104,
                                 columnNumber: 13
                             }, this),
                             showCTAs && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["motion"].div, {
@@ -581,48 +581,48 @@ function Hero({ title = "Apes On Ape", subtitle = "A playground for musicians, a
                                         children: button.label
                                     }, button.label, false, {
                                         fileName: "[project]/app/components/Hero.tsx",
-                                        lineNumber: 124,
+                                        lineNumber: 123,
                                         columnNumber: 19
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/app/components/Hero.tsx",
-                                lineNumber: 117,
+                                lineNumber: 116,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/components/Hero.tsx",
-                        lineNumber: 83,
+                        lineNumber: 82,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/app/components/Hero.tsx",
-                    lineNumber: 82,
+                    lineNumber: 81,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/components/Hero.tsx",
-                lineNumber: 81,
+                lineNumber: 80,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "absolute top-1/4 right-1/4 w-64 h-64 bg-neon-cyan/5 rounded-full blur-3xl"
             }, void 0, false, {
                 fileName: "[project]/app/components/Hero.tsx",
-                lineNumber: 146,
+                lineNumber: 145,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "absolute bottom-1/4 left-1/4 w-96 h-96 bg-neon-green/5 rounded-full blur-3xl"
             }, void 0, false, {
                 fileName: "[project]/app/components/Hero.tsx",
-                lineNumber: 147,
+                lineNumber: 146,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/components/Hero.tsx",
-        lineNumber: 32,
+        lineNumber: 31,
         columnNumber: 5
     }, this);
 }

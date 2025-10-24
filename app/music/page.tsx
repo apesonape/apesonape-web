@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Play, Pause, Volume2, VolumeX, SkipForward, SkipBack, Music, Headphones } from 'lucide-react';
 import { SiSoundcloud } from 'react-icons/si';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // Mock music data - in production, this would come from SoundCloud API
 const mockTracks = [
@@ -111,11 +112,15 @@ const MusicPage = () => {
       <nav className="relative z-50 p-6">
         <div className="flex justify-between items-center">
           <Link href="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
-            <img 
-              src="/apechain.png"
-              alt="Apechain Logo"
-              className="h-8 w-auto"
-            />
+            <div className="h-8 w-8 relative">
+              <Image 
+                src="/apechain.png"
+                alt="Apechain Logo"
+                fill
+                sizes="32px"
+                className="object-contain"
+              />
+            </div>
             <span className="text-xl font-bold text-ape-gold">Apes On Ape</span>
           </Link>
           
@@ -157,11 +162,13 @@ const MusicPage = () => {
             >
               {/* Track Info */}
               <div className="flex items-center gap-6 mb-8">
-                <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-ape-gold/30">
-                  <img 
+                <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-ape-gold/30 relative">
+                  <Image 
                     src={currentTrack.cover} 
                     alt={currentTrack.title}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="96px"
+                    className="object-cover"
                   />
                 </div>
                 <div className="flex-1">
@@ -287,11 +294,13 @@ const MusicPage = () => {
                     whileHover={{ scale: 1.02 }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden">
-                        <img 
+                      <div className="w-12 h-12 rounded-lg overflow-hidden relative flex-shrink-0">
+                        <Image 
                           src={track.cover} 
                           alt={track.title}
-                          className="w-full h-full object-cover"
+                          fill
+                          sizes="48px"
+                          className="object-cover"
                         />
                       </div>
                       <div className="flex-1 min-w-0">

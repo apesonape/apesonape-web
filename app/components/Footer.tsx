@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { SiApplearcade, SiSoundcloud } from 'react-icons/si';
+import { SiSoundcloud } from 'react-icons/si';
 
 export default function Footer() {
   const currentYear = 2024;

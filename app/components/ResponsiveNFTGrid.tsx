@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Grid, List, Maximize2, Minimize2 } from 'lucide-react';
 import { MagicEdenNFT } from '@/lib/magic-eden';
+import Image from 'next/image';
 
 interface ResponsiveNFTGridProps {
   nfts: MagicEdenNFT[];
@@ -177,10 +178,12 @@ const ResponsiveNFTGrid: React.FC<ResponsiveNFTGridProps> = ({
             >
               {viewMode === 'grid' ? (
                 <div className="relative h-full bg-gradient-to-br from-ape-gold/20 to-ape-gold/5 rounded-lg overflow-hidden border border-ape-gold/30">
-                  <img 
+                  <Image 
                     src={nft.image} 
                     alt={nft.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 16vw"
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="absolute bottom-2 left-2 right-2 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -193,11 +196,13 @@ const ResponsiveNFTGrid: React.FC<ResponsiveNFTGridProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-4 w-full">
-                  <div className="w-16 h-16 rounded-lg overflow-hidden">
-                    <img 
+                  <div className="w-16 h-16 rounded-lg overflow-hidden relative flex-shrink-0">
+                    <Image 
                       src={nft.image} 
                       alt={nft.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="64px"
+                      className="object-cover"
                     />
                   </div>
                   <div className="flex-1">
