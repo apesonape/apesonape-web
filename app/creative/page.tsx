@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import NextImage from 'next/image';
+import bannerExample from '@/public/banner-example.png';
 import { Wand2, ImagePlus } from 'lucide-react';
 import Nav from '../components/Nav';
 import Footer from '../components/Footer';
@@ -43,7 +44,7 @@ export default function CreativeHubPage() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="mb-10"
         >
-          <Link href="/banners" className="inline-flex items-center gap-3 btn-primary">
+            <Link href="/creative/banners" className="inline-flex items-center gap-3 btn-primary">
             <ImagePlus className="w-5 h-5" />
             Generate Banner
           </Link>
@@ -64,15 +65,26 @@ export default function CreativeHubPage() {
             <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Banner Generator</h3>
             <div className="relative w-full rounded-lg overflow-hidden border border-white/10 mb-3">
               <NextImage
-                src="/banner-example.png"
+                src={bannerExample}
                 alt="Example social banner"
                 width={1200}
                 height={400}
+                priority
                 className="w-full h-auto object-cover"
               />
             </div>
             <p className="text-sm text-off-white/80 mb-3">Create a customized social banner from your NFT.</p>
-            <Link href="/banners" className="btn-secondary inline-flex items-center w-fit">Open</Link>
+            <Link href="/creative/banners" className="btn-secondary inline-flex items-center w-fit">Open</Link>
+          </div>
+
+          {/* Creator Spotlight card */}
+          <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
+            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
+              <span>New</span>
+            </div>
+            <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Creator Spotlight</h3>
+            <p className="text-sm text-off-white/80 mb-3">Discover art and videos made by the Apes On Ape community. Stories, credits, and links to creators&rsquo; profiles.</p>
+            <Link href="/creative/spotlight" className="btn-secondary inline-flex items-center w-fit">Explore</Link>
           </div>
 
           <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
