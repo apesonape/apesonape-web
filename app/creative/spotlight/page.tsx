@@ -78,33 +78,52 @@ export default function CreatorSpotlightPage() {
   function XStatusEmbed({ url }: { url: string }) {
     const ref = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
-      const tweetId = extractTweetId(url);
-      if (!tweetId || !ref.current) return;
-      // Infer theme
+      const container = ref.current;
+      if (!container) return;
+
+      // Extract tweet id (not strictly required for blockquote mode)
+      const extract = extractTweetId(url);
+      // Skip if already rendered same tweet
+      if ((container as HTMLElement).dataset.tweetId === (extract || url)) return;
+      (container as HTMLElement).dataset.tweetId = extract || url;
+
+      // Determine theme on client
       const themeAttr = document.documentElement.getAttribute('data-theme');
-      const theme = themeAttr === 'light' ? 'light' : 'dark';
-      const maybe = (window as unknown) as { twttr?: { widgets?: { load?: (el?: HTMLElement) => void } } };
-      // Avoid duplicate embeds
-      if ((ref.current as HTMLElement).dataset.tweetId === tweetId) return;
-      (ref.current as HTMLElement).dataset.tweetId = tweetId;
-      // Render blockquote markup; widgets.js will transform it
-      ref.current.innerHTML = `<blockquote class="twitter-tweet" data-theme="${theme}"><a href="${url}"></a></blockquote>`;
-      if (maybe.twttr?.widgets?.load) {
-        maybe.twttr.widgets.load(ref.current);
-      } else {
-        const t = setTimeout(() => {
-          const tw = (window as unknown) as { twttr?: { widgets?: { load?: (el?: HTMLElement) => void } } };
-          if (tw.twttr?.widgets?.load && ref.current) tw.twttr.widgets.load(ref.current);
-        }, 300);
-        return () => clearTimeout(t);
-      }
+      const isDark = themeAttr ? themeAttr !== 'light' : document.documentElement.classList.contains('dark');
+      const theme: 'light' | 'dark' = isDark ? 'dark' : 'light';
+
+      // Normalize to twitter.com URL for better reliability
+      const id = extract || '';
+      const canonical = id ? `https://twitter.com/i/status/${id}` : url.replace('https://x.com', 'https://twitter.com');
+      // Inject blockquote that widgets.js transforms
+      container.innerHTML = `<blockquote class=\"twitter-tweet\" data-theme=\"${theme}\"><a href=\"${canonical}\"></a></blockquote>`;
+
+      const tryLoad = () => {
+        const w = (window as unknown) as { twttr?: { widgets?: { load?: (el?: HTMLElement) => void } } };
+        w.twttr?.widgets?.load?.(container);
+      };
+
+      // Attempt immediately and once more shortly after
+      tryLoad();
+      const t = window.setTimeout(tryLoad, 600);
+      return () => window.clearTimeout(t);
     }, [url]);
+
+    // Return empty container on SSR; all work happens client-side
     return <div ref={ref} />;
   }
 
   return (
     <div className="min-h-screen relative">
-      <Script id="twitter-wjs" src="https://platform.twitter.com/widgets.js" strategy="lazyOnload" />
+      <Script
+        id="twitter-wjs"
+        src="https://platform.twitter.com/widgets.js"
+        strategy="afterInteractive"
+        onLoad={() => {
+          const w = (window as unknown) as { twttr?: { widgets?: { load?: (el?: HTMLElement) => void } } };
+          w.twttr?.widgets?.load?.();
+        }}
+      />
       <Nav />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12">
         <motion.h1

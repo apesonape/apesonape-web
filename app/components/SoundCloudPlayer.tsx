@@ -57,8 +57,8 @@ export default function SoundCloudPlayer() {
   const hasAutoTriedRef = useRef(false);
   const unmuteOnFirstInteractionRef = useRef(true);
 
-  // Pick a random start track index on mount
-  const startTrackIndex = useMemo(() => Math.floor(Math.random() * 10), []); // fallback upper bound; corrected after READY
+  // Use a stable start index for SSR/CSR match; we randomize after READY
+  const stableStartIndex = 0;
 
   // Build iframe src with minimal classic player UI
   const playerSrc = useMemo(() => {
@@ -72,10 +72,10 @@ export default function SoundCloudPlayer() {
       show_reposts: 'false',
       show_teaser: 'false',
       visual: 'false',
-      start_track: String(startTrackIndex),
+      start_track: String(stableStartIndex),
     });
     return `https://w.soundcloud.com/player/?${params.toString()}`;
-  }, [startTrackIndex]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -226,7 +226,7 @@ export default function SoundCloudPlayer() {
         title="Apes On Ape — SoundCloud Player"
         style={{ width: 0, height: 0, opacity: 0, pointerEvents: 'none', position: 'absolute' }}
         src={playerSrc}
-        allow="autoplay"
+        allow="autoplay; encrypted-media"
       />
 
       {/* Simple Controls */}

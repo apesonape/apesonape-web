@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import NextImage from 'next/image';
 import bannerExample from '@/public/banner-example.png';
+import zaaArtwork from '@/public/artwork/zaa-artwork.png';
 import { Wand2, ImagePlus } from 'lucide-react';
 import Nav from '../components/Nav';
 import Footer from '../components/Footer';
@@ -83,6 +84,15 @@ export default function CreativeHubPage() {
               <span>New</span>
             </div>
             <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Creator Spotlight</h3>
+            <div className="relative w-full rounded-lg overflow-hidden border border-white/10 mb-3">
+              <NextImage
+                src={zaaArtwork}
+                alt="Creator Spotlight sample"
+                width={1200}
+                height={400}
+                className="w-full h-auto object-cover"
+              />
+            </div>
             <p className="text-sm text-off-white/80 mb-3">Discover art and videos made by the Apes On Ape community. Stories, credits, and links to creators&rsquo; profiles.</p>
             <Link href="/creative/spotlight" className="btn-secondary inline-flex items-center w-fit">Explore</Link>
           </div>
