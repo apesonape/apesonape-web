@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import Script from 'next/script';
 import { motion } from 'framer-motion';
 import Nav from '../../components/Nav';
 import Footer from '../../components/Footer';
@@ -58,16 +59,6 @@ const demos: SpotlightItem[] = [
 ];
 
 export default function CreatorSpotlightPage() {
-  // Load X(Twitter) embed script once for blockquote embeds
-  useEffect(() => {
-    const id = 'twitter-wjs';
-    if (document.getElementById(id)) return;
-    const s = document.createElement('script');
-    s.id = id;
-    s.async = true;
-    s.src = 'https://platform.twitter.com/widgets.js';
-    document.body.appendChild(s);
-  }, []);
 
   function extractTweetId(url: string): string | null {
     try {
@@ -92,32 +83,18 @@ export default function CreatorSpotlightPage() {
       // Infer theme
       const themeAttr = document.documentElement.getAttribute('data-theme');
       const theme = themeAttr === 'light' ? 'light' : 'dark';
-      // Minimal window type without using any
-      const maybe = (window as unknown) as { twttr?: { widgets?: { createTweet?: (id: string, el: HTMLElement, opts?: { align?: string; theme?: 'light' | 'dark' }) => Promise<unknown> } } };
-      // Avoid duplicate embeds: if same tweet already embedded, skip
+      const maybe = (window as unknown) as { twttr?: { widgets?: { load?: (el?: HTMLElement) => void } } };
+      // Avoid duplicate embeds
       if ((ref.current as HTMLElement).dataset.tweetId === tweetId) return;
       (ref.current as HTMLElement).dataset.tweetId = tweetId;
-      // Clear any previous embed to avoid duplicates (StrictMode / rerenders)
-      ref.current.innerHTML = '';
-      if (maybe.twttr?.widgets?.createTweet) {
-        maybe.twttr.widgets.createTweet(tweetId, ref.current, { align: 'center', theme }).catch(() => {
-          // On failure, allow retries by unsetting id
-          if (ref.current) delete (ref.current as HTMLElement).dataset.tweetId;
-        });
+      // Render blockquote markup; widgets.js will transform it
+      ref.current.innerHTML = `<blockquote class="twitter-tweet" data-theme="${theme}"><a href="${url}"></a></blockquote>`;
+      if (maybe.twttr?.widgets?.load) {
+        maybe.twttr.widgets.load(ref.current);
       } else {
-        // If widgets not ready yet, retry shortly
         const t = setTimeout(() => {
-          const tw = (window as unknown) as { twttr?: { widgets?: { createTweet?: (id: string, el: HTMLElement, opts?: { align?: string; theme?: 'light' | 'dark' }) => Promise<unknown> } } };
-          if (tw.twttr?.widgets?.createTweet && ref.current) {
-            // check again to avoid duplicate
-            if ((ref.current as HTMLElement).dataset.tweetId !== tweetId) {
-              (ref.current as HTMLElement).dataset.tweetId = tweetId;
-              ref.current.innerHTML = '';
-              tw.twttr.widgets.createTweet(tweetId, ref.current, { align: 'center', theme }).catch(() => {
-                if (ref.current) delete (ref.current as HTMLElement).dataset.tweetId;
-              });
-            }
-          }
+          const tw = (window as unknown) as { twttr?: { widgets?: { load?: (el?: HTMLElement) => void } } };
+          if (tw.twttr?.widgets?.load && ref.current) tw.twttr.widgets.load(ref.current);
         }, 300);
         return () => clearTimeout(t);
       }
@@ -127,6 +104,7 @@ export default function CreatorSpotlightPage() {
 
   return (
     <div className="min-h-screen relative">
+      <Script id="twitter-wjs" src="https://platform.twitter.com/widgets.js" strategy="lazyOnload" />
       <Nav />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12">
         <motion.h1
