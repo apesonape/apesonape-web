@@ -35,9 +35,22 @@ export interface MagicEdenCollection {
   marketCap: number;
 }
 
+// Raw attributes as returned by external APIs/metadata
+type RawAttributes = Array<{ trait_type?: string; name?: string; value?: string; rarity?: number }>;
+
 class MagicEdenAPI {
-  private baseUrl = 'https://api-mainnet.magiceden.io/v2';
+  private baseUrl = 'https://api-mainnet.magiceden.dev/v2';
   private collectionSymbol = 'apes-on-ape'; // Replace with actual collection symbol
+
+  private getEvmContractAddress(): string | null {
+    const addr = (process.env.NEXT_PUBLIC_ME_COLLECTION || '').trim();
+    return addr ? addr : null;
+  }
+
+  private getApechainRpcUrl(): string | null {
+    const rpc = (process.env.NEXT_PUBLIC_APECHAIN_RPC || '').trim();
+    return rpc || null;
+  }
 
   async getCollectionInfo(): Promise<MagicEdenCollection> {
     try {
@@ -77,6 +90,7 @@ class MagicEdenAPI {
       
       const data = await response.json();
       
+      type RawAttributes = Array<{ trait_type?: string; name?: string; value?: string; rarity?: number }>;
       return data.tokens.map((token: Record<string, unknown>) => ({
         id: token.mint,
         name: token.name || `Ape On Ape #${token.tokenId}`,
@@ -84,7 +98,7 @@ class MagicEdenAPI {
         price: token.price || 0,
         currency: token.currency || 'APE',
         rarity: token.rarity || Math.floor(Math.random() * 1000) + 1,
-        traits: token.attributes || [],
+        traits: this.normalizeAttributes(((token as { attributes?: RawAttributes }).attributes) || []),
         magicEdenUrl: `https://magiceden.us/item-details/${token.mint}`,
         owner: token.owner,
         lastSale: token.lastSale ? {
@@ -124,12 +138,40 @@ class MagicEdenAPI {
 
   async getNFTById(id: string): Promise<MagicEdenNFT | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/tokens/${id}`);
-      if (!response.ok) {
-        return null;
+      // If a plain numeric ID is provided, try EVM (Apechain) token lookup using env contract
+      if (/^\d+$/.test(id)) {
+        const evm = await this.getEvmNFTByTokenId(id);
+        if (evm) return evm;
       }
-      
-      const token = await response.json();
+
+      const urls = [
+        `${this.baseUrl}/tokens/${id}`,
+        `https://api-mainnet.magiceden.io/v2/tokens/${id}`,
+      ];
+
+      type TokenResponse = {
+        mint: string;
+        name?: string;
+        tokenId?: string;
+        image: string;
+        price?: number;
+        currency?: string;
+        rarity?: number;
+        attributes?: Array<{ trait_type?: string; name?: string; value: string; rarity?: number }>;
+        owner: string;
+        lastSale?: { price: number; currency: string; date: string };
+      };
+      let token: TokenResponse | null = null;
+      for (const u of urls) {
+        try {
+          const resp = await fetch(u, { headers: { 'accept': 'application/json' } });
+          if (resp.ok) {
+            token = await resp.json();
+            break;
+          }
+        } catch {}
+      }
+      if (!token) return null;
       
       return {
         id: token.mint,
@@ -138,7 +180,7 @@ class MagicEdenAPI {
         price: token.price || 0,
         currency: token.currency || 'APE',
         rarity: token.rarity || Math.floor(Math.random() * 1000) + 1,
-        traits: token.attributes || [],
+        traits: this.normalizeAttributes(((token as { attributes?: RawAttributes }).attributes) || []),
         magicEdenUrl: `https://magiceden.us/item-details/${token.mint}`,
         owner: token.owner,
         lastSale: token.lastSale ? {
@@ -151,6 +193,128 @@ class MagicEdenAPI {
       console.error('Error fetching NFT by ID:', error);
       return null;
     }
+  }
+
+  // Public method for numeric token IDs only (Apechain EVM collection)
+  async getNFTByTokenId(tokenId: string): Promise<MagicEdenNFT | null> {
+    if (!/^\d+$/.test(tokenId)) return null;
+    return this.getEvmNFTByTokenId(tokenId);
+  }
+
+  private async getEvmNFTByTokenId(tokenId: string): Promise<MagicEdenNFT | null> {
+    const contract = this.getEvmContractAddress();
+    const rpcUrl = this.getApechainRpcUrl();
+    if (!contract || !rpcUrl) return null;
+
+    // Build eth_call for tokenURI(uint256)
+    const selector = '0xc87b56dd'; // keccak256("tokenURI(uint256)").slice(0,10)
+    const tokenIdHex = BigInt(tokenId).toString(16);
+    const padded = tokenIdHex.padStart(64, '0');
+    const data = selector + padded;
+
+    type RpcResponse = { jsonrpc: string; id: number; result?: string; error?: { code: number; message: string } };
+    const body = {
+      jsonrpc: '2.0',
+      id: Math.floor(Math.random() * 1_000_000),
+      method: 'eth_call',
+      params: [
+        { to: contract, data },
+        'latest',
+      ],
+    };
+
+    let res: RpcResponse;
+    try {
+      const resp = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      res = (await resp.json()) as RpcResponse;
+    } catch {
+      return null;
+    }
+    if (!res.result || res.result === '0x') return null;
+
+    // Decode ABI-encoded string
+    const tokenUri = this.decodeAbiString(res.result);
+    if (!tokenUri) return null;
+
+    // Normalize IPFS gateway
+    const normalizedUri = this.normalizeIpfsUrl(tokenUri);
+
+    // Fetch metadata JSON
+    type Metadata = {
+      name?: string;
+      image?: string;
+      image_url?: string;
+      imageUrl?: string;
+      attributes?: Array<{ trait_type?: string; name?: string; value: string; rarity?: number }>;
+    };
+    let metadata: Metadata | null = null;
+    try {
+      const metaResp = await fetch(normalizedUri, { headers: { accept: 'application/json' } });
+      if (metaResp.ok) metadata = await metaResp.json();
+    } catch {}
+    if (!metadata) return null;
+
+    const image = this.normalizeIpfsUrl(metadata.image || metadata.image_url || metadata.imageUrl || '');
+    const name = metadata.name || `Ape On Ape #${tokenId}`;
+    return {
+      id: `${contract}:${tokenId}`,
+      name,
+      image,
+      price: 0,
+      currency: 'APE',
+      rarity: Math.floor(Math.random() * 1000) + 1,
+      traits: this.normalizeAttributes(metadata.attributes || []),
+      magicEdenUrl: `https://magiceden.us/item-details/apechain/${contract}/${tokenId}`,
+      owner: '',
+    };
+  }
+
+  private decodeAbiString(hex: string): string | null {
+    try {
+      // Strip 0x
+      const data = hex.startsWith('0x') ? hex.slice(2) : hex;
+      // First 32 bytes: offset (ignore)
+      // Next 32 bytes: length
+      const lenHex = data.slice(64, 128);
+      const len = parseInt(lenHex, 16);
+      const strHex = data.slice(128, 128 + len * 2);
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = parseInt(strHex.slice(i * 2, i * 2 + 2), 16);
+      }
+      return new TextDecoder().decode(bytes);
+    } catch {
+      return null;
+    }
+  }
+
+  private normalizeIpfsUrl(url: string): string {
+    if (!url) return url;
+    if (url.startsWith('ipfs://')) {
+      const cid = url.replace('ipfs://', '');
+      return `https://gateway.pinata.cloud/ipfs/${cid}`;
+    }
+    const idx = url.indexOf('/ipfs/');
+    if (idx !== -1) {
+      return `https://gateway.pinata.cloud${url.slice(idx)}`;
+    }
+    return url;
+  }
+
+  // Normalize attributes to the internal trait shape
+  private normalizeAttributes(attrs: Array<{ trait_type?: string; name?: string; value?: string; rarity?: number }>): MagicEdenNFT['traits'] {
+    if (!Array.isArray(attrs)) return [];
+    return attrs
+      .filter((a) => typeof a?.value === 'string')
+      .map((a) => ({
+        name: (a.name || a.trait_type || 'Trait') as string,
+        value: a.value as string,
+        rarity: typeof a.rarity === 'number' ? a.rarity : 0,
+      }));
   }
 
   async searchNFTs(query: string, limit: number = 32): Promise<MagicEdenNFT[]> {

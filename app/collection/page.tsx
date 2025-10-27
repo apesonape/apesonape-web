@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Search, Filter, TrendingUp, Users, Layers, ExternalLink, ShoppingBag } from 'lucide-react';
 import Nav from '../components/Nav';
+import Image from 'next/image';
 import Footer from '../components/Footer';
 import NFTCard from '../components/NFTCard';
 import TokenDrawer from '../components/TokenDrawer';
@@ -258,9 +259,11 @@ export default function CollectionPage() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-hero-blue/10 flex items-center justify-center group-hover:bg-hero-blue/20 transition-colors">
-                      <img 
+                      <Image 
                         src="/magiceden_icon.jpeg" 
                         alt="Magic Eden" 
+                        width={32}
+                        height={32}
                         className="w-8 h-8 rounded-lg"
                       />
                     </div>
@@ -282,9 +285,11 @@ export default function CollectionPage() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-ape-gold/10 flex items-center justify-center group-hover:bg-ape-gold/20 transition-colors">
-                      <img 
+                      <Image 
                         src="/mintify_icon.jpeg" 
                         alt="Mintify" 
+                        width={32}
+                        height={32}
                         className="w-8 h-8 rounded-lg"
                       />
                     </div>
@@ -306,9 +311,11 @@ export default function CollectionPage() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center overflow-hidden group-hover:bg-blue-500/20 transition-colors">
-                      <img
+                      <Image
                         src="/opensea-logo.webp"
                         alt="OpenSea"
+                        width={32}
+                        height={32}
                         className="w-8 h-8 object-contain"
                       />
                     </div>

@@ -142,6 +142,23 @@ body::before {
   .btn-primary {
     @apply px-6 py-3 bg-hero-blue text-white font-semibold rounded-lg transition-all duration-300 hover:bg-hero-blue-light hover:shadow-lg hover:shadow-hero-blue/30;
   }
+
+  /* Themed select for light/dark readability */
+  .theme-select {
+    background: var(--card-bg);
+    color: var(--foreground);
+    border: 1.5px solid var(--border-color);
+    border-radius: 0.5rem;
+  }
+  .theme-select:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 84, 249, 0.35);
+    border-color: var(--border-color);
+  }
+  .theme-select option {
+    color: var(--foreground);
+    background: var(--background);
+  }
   
   .btn-secondary {
     @apply px-6 py-3 bg-transparent font-semibold rounded-lg border-2 border-hero-blue/50 transition-all duration-300 hover:border-hero-blue hover:bg-hero-blue/10;

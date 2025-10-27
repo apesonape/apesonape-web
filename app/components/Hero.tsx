@@ -11,13 +11,13 @@ interface HeroProps {
 
 export default function Hero({ 
   title = "Apes On Ape",
-  subtitle = "A playground for musicians, artists, game devs, and builders. Join in. Make weird. Make loud.",
+  subtitle = "Apes on Ape is the wild frontier of creation — where sound, art, code, and vision collide. No rules. No limits. Just creators building the future together.",
   showCTAs = true 
 }: HeroProps) {
   const ctaButtons = [
     {
-      label: 'Join Discord',
-      href: 'https://discord.gg/gVmqW6SExU',
+      label: 'Join the Movement',
+      href: '/collection',
       primary: true,
     },
     {

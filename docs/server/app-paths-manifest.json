@@ -1,8 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/collection/page": "app/collection/page.js",
-  "/api/me/tokens/route": "app-edge-has-no-entrypoint",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/sound/page": "app/sound/page.js",
-  "/team/page": "app/team/page.js"
-}
