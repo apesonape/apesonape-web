@@ -1,0 +1,16 @@
+{
+  "app": {
+    "[project]/app/page": [
+      "static/media/1Ptug8zYS_SKggPNyC0IT4ttDfA-s.p.a3111b96.woff2"
+    ],
+    "[project]/app/creative/page": [
+      "static/media/1Ptug8zYS_SKggPNyC0IT4ttDfA-s.p.a3111b96.woff2"
+    ],
+    "[project]/app/creative/spotlight/page": [
+      "static/media/1Ptug8zYS_SKggPNyC0IT4ttDfA-s.p.a3111b96.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}
