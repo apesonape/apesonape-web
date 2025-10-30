@@ -21,6 +21,15 @@ type SpotlightItem = {
 // Placeholder content – can be replaced with fetched content later
 const demos: SpotlightItem[] = [
   {
+    id: '7',
+    title: 'RabidArtWork — Artist Spotlight',
+    creator: 'RabidArtWork',
+    xHandle: 'RabidArtWorkRIP',
+    mediaType: 'x',
+    src: 'https://x.com/RabidArtWorkRIP/status/1825991624339423262',
+    story: '',
+  },
+  {
     id: '3',
     title: '199ZEN — Community Spotlight',
     creator: '199ZEN',
