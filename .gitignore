@@ -56,3 +56,4 @@ docs/*
 cache/
 typechain-types/
 supabase/.temp/
+docs

@@ -1,17 +1,5 @@
 'use client';
 
-<<<<<<< HEAD
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Search, Filter, TrendingUp, Users, Layers, ExternalLink, ShoppingBag } from 'lucide-react';
-import Nav from '../components/Nav';
-import Image from 'next/image';
-import Footer from '../components/Footer';
-import NFTCard from '../components/NFTCard';
-import TokenDrawer from '../components/TokenDrawer';
-import { MagicEdenNFT } from '@/lib/magic-eden';
-=======
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -26,7 +14,6 @@ const EXCLUDED_TRAIT_TYPES = new Set(['Background', 'BG', 'Background Color', 'B
 
 // Fixed collection: only this metadata CID is used
 const DEFAULT_METADATA_CID = process.env.NEXT_PUBLIC_DEFAULT_METADATA_CID || 'bafybeientok65jcovpzki5t64qdq3mqsfty5vkur2nwmbs6zibzei37vdy';
->>>>>>> b39f14f (init: clean history without build artifacts)
 
 interface CollectionStats {
   floorPrice: number;
@@ -42,37 +29,6 @@ export default function CollectionPage() {
   const observerTarget = useRef<HTMLDivElement>(null);
 
   // State
-<<<<<<< HEAD
-  const [nfts, setNfts] = useState<MagicEdenNFT[]>([]);
-  const [filteredNFTs, setFilteredNFTs] = useState<MagicEdenNFT[]>([]);
-  const [displayedNFTs, setDisplayedNFTs] = useState<MagicEdenNFT[]>([]);
-  const [stats, setStats] = useState<CollectionStats | null>(null);
-  const [selectedNFT, setSelectedNFT] = useState<MagicEdenNFT | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-
-  // Filters from URL
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-  const [sortBy, setSortBy] = useState<'rarity' | 'price-asc' | 'price-desc' | 'name'>(
-    (searchParams.get('sort') as 'rarity' | 'price-asc' | 'price-desc' | 'name') || 'rarity'
-  );
-  const [selectedTraits, setSelectedTraits] = useState<string[]>(
-    searchParams.get('traits')?.split(',').filter(Boolean) || []
-  );
-  const [priceRange, setPriceRange] = useState<[number, number]>([
-    parseFloat(searchParams.get('minPrice') || '0'),
-    parseFloat(searchParams.get('maxPrice') || '10'),
-  ]);
-
-  const itemsPerPage = 24;
-
-  // Available traits for filtering
-  const availableTraits = [
-    'Golden', 'Silver', 'Blue', 'Red', 'Crown', 'Chain', 
-    'Hat', 'Space', 'Forest', 'City', 'Ocean', 'Laser'
-  ];
-=======
   // Drive-backed gallery items
   type DriveItem = {
     id: string;
@@ -122,23 +78,11 @@ export default function CollectionPage() {
   const [traitsVersion, setTraitsVersion] = useState(0); // bump to recompute derived state
   // Guard against duplicate metadata fetches per token
   const fetchedMetaRef = useRef<Set<string>>(new Set());
->>>>>>> b39f14f (init: clean history without build artifacts)
 
   // Update URL with filters
   const updateURL = useCallback(() => {
     const params = new URLSearchParams();
     if (searchTerm) params.set('search', searchTerm);
-<<<<<<< HEAD
-    if (sortBy !== 'rarity') params.set('sort', sortBy);
-    if (selectedTraits.length > 0) params.set('traits', selectedTraits.join(','));
-    if (priceRange[0] !== 0) params.set('minPrice', priceRange[0].toString());
-    if (priceRange[1] !== 10) params.set('maxPrice', priceRange[1].toString());
-    
-    router.push(`/collection?${params.toString()}`, { scroll: false });
-  }, [searchTerm, sortBy, selectedTraits, priceRange, router]);
-
-  // Load NFTs and stats
-=======
     if (sortBy !== 'token-asc') params.set('sort', sortBy);
     const traitParam = Object.entries(selectedByType)
       .filter(([, set]) => set.size > 0)
@@ -191,17 +135,10 @@ export default function CollectionPage() {
   }
 
   // Load collection using fixed IPFS metadata CID
->>>>>>> b39f14f (init: clean history without build artifacts)
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-<<<<<<< HEAD
-        // Load NFTs
-        const nftsResponse = await fetch('/api/me/tokens?limit=150');
-        const nftsData = await nftsResponse.json();
-        setNfts(nftsData.tokens || []);
-=======
         const cid = DEFAULT_METADATA_CID;
         const startId = parseInt(searchParams.get('start') || '0', 10);
         const endParam = searchParams.get('end');
@@ -243,7 +180,6 @@ export default function CollectionPage() {
         setPlannedUntil(seedEnd);
 
         setDriveItems(items);
->>>>>>> b39f14f (init: clean history without build artifacts)
 
         // Load stats
         const statsResponse = await fetch('/api/me/stats');
@@ -257,31 +193,6 @@ export default function CollectionPage() {
     };
 
     loadData();
-<<<<<<< HEAD
-  }, []);
-
-  // Apply filters and sorting
-  useEffect(() => {
-    let filtered = [...nfts];
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(nft =>
-        nft.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Price range filter
-    filtered = filtered.filter(nft =>
-      nft.price >= priceRange[0] && nft.price <= priceRange[1]
-    );
-
-    // Traits filter
-    if (selectedTraits.length > 0) {
-      filtered = filtered.filter(nft => 
-        nft.traits.some(trait => selectedTraits.includes(trait.value))
-      );
-=======
   }, [searchParams]);
 
   // Helper: parse attributes into internal trait shape and update caches/sets
@@ -461,22 +372,11 @@ export default function CollectionPage() {
           traits.some(t => t.name === type && values.has(t.value))
       );
       });
->>>>>>> b39f14f (init: clean history without build artifacts)
     }
 
     // Sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
-<<<<<<< HEAD
-        case 'rarity':
-          return a.rarity - b.rarity;
-        case 'price-asc':
-          return a.price - b.price;
-        case 'price-desc':
-          return b.price - a.price;
-        case 'name':
-          return a.name.localeCompare(b.name);
-=======
         case 'token-asc': {
           const ai = a.tokenId ? parseInt(a.tokenId, 10) : Number.MAX_SAFE_INTEGER;
           const bi = b.tokenId ? parseInt(b.tokenId, 10) : Number.MAX_SAFE_INTEGER;
@@ -487,42 +387,21 @@ export default function CollectionPage() {
           const bi = b.tokenId ? parseInt(b.tokenId, 10) : Number.MIN_SAFE_INTEGER;
           return bi - ai;
         }
->>>>>>> b39f14f (init: clean history without build artifacts)
         default:
           return 0;
       }
     });
 
-<<<<<<< HEAD
-    setFilteredNFTs(filtered);
-    setPage(1);
-    setDisplayedNFTs(filtered.slice(0, itemsPerPage));
-    setHasMore(filtered.length > itemsPerPage);
-  }, [nfts, searchTerm, sortBy, selectedTraits, priceRange]);
-=======
     setFilteredItems(filtered);
     setPage(1);
     setDisplayedItems(filtered.slice(0, itemsPerPage));
     setHasMore(filtered.length > itemsPerPage);
   }, [driveItems, searchTerm, sortBy, selectedByType]);
->>>>>>> b39f14f (init: clean history without build artifacts)
 
   // Infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-<<<<<<< HEAD
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          const nextPage = page + 1;
-          const start = nextPage * itemsPerPage;
-          const end = start + itemsPerPage;
-          const newItems = filteredNFTs.slice(start, end);
-          
-          if (newItems.length > 0) {
-            setDisplayedNFTs(prev => [...prev, ...newItems]);
-            setPage(nextPage);
-            setHasMore(end < filteredNFTs.length);
-=======
         if (!entries[0].isIntersecting || !hasMore || loading) return;
           const nextPage = page + 1;
           const start = nextPage * itemsPerPage;
@@ -551,7 +430,6 @@ export default function CollectionPage() {
             setDriveItems(prev => [...prev, ...planned]);
             setPlannedUntil(planEndId);
             // Do not advance page yet; once filteredItems grows, observer will fire again
->>>>>>> b39f14f (init: clean history without build artifacts)
           } else {
             setHasMore(false);
           }
@@ -565,25 +443,13 @@ export default function CollectionPage() {
     }
 
     return () => observer.disconnect();
-<<<<<<< HEAD
-  }, [page, hasMore, loading, filteredNFTs]);
-=======
   }, [page, hasMore, loading, filteredItems, plannedUntil, totalCount]);
->>>>>>> b39f14f (init: clean history without build artifacts)
 
   // Update URL when filters change
   useEffect(() => {
     updateURL();
   }, [updateURL]);
 
-<<<<<<< HEAD
-  const toggleTrait = (trait: string) => {
-    setSelectedTraits(prev => 
-      prev.includes(trait) 
-        ? prev.filter(t => t !== trait)
-        : [...prev, trait]
-    );
-=======
   const toggleTraitValue = (type: string, value: string) => {
     setSelectedByType(prev => {
       const next = { ...prev };
@@ -592,18 +458,10 @@ export default function CollectionPage() {
       next[type] = set;
       return next;
     });
->>>>>>> b39f14f (init: clean history without build artifacts)
   };
 
   const clearFilters = () => {
     setSearchTerm('');
-<<<<<<< HEAD
-    setSortBy('rarity');
-    setSelectedTraits([]);
-    setPriceRange([0, 10]);
-  };
-
-=======
     setSortBy('token-asc');
     setSelectedByType({});
     setValueFilterByType({});
@@ -634,7 +492,6 @@ export default function CollectionPage() {
   // Modal traits derived from cache; reacts to traitsVersion updates
   // removed unused modalTraits
 
->>>>>>> b39f14f (init: clean history without build artifacts)
   return (
     <div className="min-h-screen" style={{ color: 'var(--foreground)', background: 'var(--background)' }}>
       <Nav />
@@ -781,140 +638,6 @@ export default function CollectionPage() {
             </motion.div>
         </motion.div>
 
-<<<<<<< HEAD
-          {/* Placeholder below Marketplaces */}
-          <motion.div
-            className="glass-dark rounded-xl p-12 text-center mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
-              Coming Soon...
-            </p>
-            <p className="mt-2" style={{ color: 'var(--ape-gray)' }}>
-              The collection viewer is being upgraded.
-            </p>
-          </motion.div>
-
-          {/* Filters */}
-        {false && (
-        <motion.div 
-            className="glass-dark rounded-xl p-6 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-        >
-            <div className="flex flex-col lg:flex-row gap-6">
-            {/* Search */}
-              <div className="flex-1">
-            <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                    placeholder="Search by name or ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 glass border border-white/10 rounded-lg placeholder-gray-400 focus:border-hero-blue focus:outline-none transition-colors"
-                    style={{ color: 'var(--foreground)' }}
-              />
-                </div>
-            </div>
-
-            {/* Sort */}
-              <div>
-            <select
-              value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'rarity' | 'price-asc' | 'price-desc' | 'name')}
-                  className="w-full px-4 py-3 glass border border-white/10 rounded-lg focus:border-hero-blue focus:outline-none transition-colors cursor-pointer"
-                  style={{ color: 'var(--foreground)' }}
-            >
-              <option value="rarity">Sort by Rarity</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-              <option value="name">Sort by Name</option>
-            </select>
-              </div>
-
-              {/* Clear Filters */}
-              {(searchTerm || sortBy !== 'rarity' || selectedTraits.length > 0 || priceRange[0] !== 0 || priceRange[1] !== 10) && (
-                <button
-                  onClick={clearFilters}
-                  className="btn-secondary whitespace-nowrap"
-                >
-                  Clear Filters
-                </button>
-              )}
-            </div>
-
-            {/* Price Range */}
-            <div className="mt-6">
-              <label className="text-sm mb-2 block" style={{ color: 'var(--ape-gray)' }}>
-                Price Range: {priceRange[0]} - {priceRange[1]} APE
-              </label>
-              <div className="flex gap-4 items-center">
-                <input
-                  type="range"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={priceRange[0]}
-                  onChange={(e) => setPriceRange([parseFloat(e.target.value), priceRange[1]])}
-                  className="flex-1 h-2 bg-charcoal-light rounded-lg appearance-none cursor-pointer accent-neon-cyan"
-                />
-              <input
-                type="range"
-                min="0"
-                max="10"
-                step="0.1"
-                value={priceRange[1]}
-                onChange={(e) => setPriceRange([priceRange[0], parseFloat(e.target.value)])}
-                  className="flex-1 h-2 bg-charcoal-light rounded-lg appearance-none cursor-pointer accent-neon-cyan"
-              />
-            </div>
-          </div>
-
-          {/* Trait Filters */}
-          <div className="mt-6">
-              <h3 className="text-sm mb-3" style={{ color: 'var(--ape-gray)' }}>Filter by Traits</h3>
-            <div className="flex flex-wrap gap-2">
-                {availableTraits.map(trait => (
-                <button
-                  key={trait}
-                  onClick={() => toggleTrait(trait)}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${
-                    selectedTraits.includes(trait)
-                        ? 'bg-neon-cyan/20 text-neon-cyan border-2 border-neon-cyan'
-                        : 'glass border-2 border-white/10 hover:border-hero-blue/50'
-                  }`}
-                >
-                  {trait}
-                </button>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-        )}
-
-          {/* Results Count */}
-          {false && (
-          <motion.div 
-            className="mb-6 text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            <p style={{ color: 'var(--ape-gray)' }}>
-              Showing <span className="text-hero-blue font-semibold">{displayedNFTs.length}</span> of{' '}
-              <span className="text-hero-blue font-semibold">{filteredNFTs.length}</span> NFTs
-            </p>
-          </motion.div>
-          )}
-
-          {/* Loading State */}
-          {false && (
-            loading ? (
-=======
           {/* Sidebar filters (left) + Grid (right) */}
           <div className="grid lg:grid-cols-5 gap-6">
             {/* Left: Filters */}
@@ -1064,7 +787,6 @@ export default function CollectionPage() {
           </motion.div>
 
               {loading ? (
->>>>>>> b39f14f (init: clean history without build artifacts)
               <div className="flex items-center justify-center py-20">
                 <div className="text-center">
                   <div className="w-16 h-16 border-4 border-neon-cyan/30 border-t-neon-cyan rounded-full animate-spin mx-auto mb-4"></div>
@@ -1073,21 +795,6 @@ export default function CollectionPage() {
               </div>
             ) : (
               <>
-<<<<<<< HEAD
-                {/* NFT Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-6">
-                  {displayedNFTs.map((nft, index) => (
-                    <NFTCard
-                      key={`${nft.id}-${index}`}
-                      nft={nft}
-                      onClick={() => setSelectedNFT(nft)}
-                      index={index}
-                    />
-                  ))}
-                </div>
-
-                {/* Infinite Scroll Observer */}
-=======
                   {/* 4 columns on desktop */}
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                     {displayedItems.map((item) => (
@@ -1120,19 +827,13 @@ export default function CollectionPage() {
                   ))}
                 </div>
 
->>>>>>> b39f14f (init: clean history without build artifacts)
                 {hasMore && (
                   <div ref={observerTarget} className="flex justify-center py-8">
                     <div className="w-12 h-12 border-4 border-neon-cyan/30 border-t-neon-cyan rounded-full animate-spin"></div>
                   </div>
                 )}
 
-<<<<<<< HEAD
-                {/* End of Results */}
-                {!hasMore && filteredNFTs.length > 0 && (
-=======
                   {!hasMore && filteredItems.length > 0 && (
->>>>>>> b39f14f (init: clean history without build artifacts)
                   <motion.div 
                     className="text-center py-12"
                     initial={{ opacity: 0 }}
@@ -1142,22 +843,13 @@ export default function CollectionPage() {
                   </motion.div>
                 )}
 
-<<<<<<< HEAD
-                {/* No Results */}
-                {filteredNFTs.length === 0 && (
-=======
                   {filteredItems.length === 0 && (
->>>>>>> b39f14f (init: clean history without build artifacts)
                   <motion.div 
                     className="text-center py-20"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                   >
-<<<<<<< HEAD
-                    <p className="text-2xl mb-4" style={{ color: 'var(--foreground)' }}>No NFTs found</p>
-=======
                       <p className="text-2xl mb-4" style={{ color: 'var(--foreground)' }}>No images found</p>
->>>>>>> b39f14f (init: clean history without build artifacts)
                     <p className="mb-6" style={{ color: 'var(--ape-gray)' }}>
                       Try adjusting your filters to see more results
                     </p>
@@ -1167,21 +859,13 @@ export default function CollectionPage() {
                   </motion.div>
                 )}
               </>
-<<<<<<< HEAD
-            )
-          )}
-=======
           )}
             </section>
           </div>
->>>>>>> b39f14f (init: clean history without build artifacts)
         </div>
       </div>
 
       <Footer />
-<<<<<<< HEAD
-      <TokenDrawer nft={selectedNFT} onClose={() => setSelectedNFT(null)} />
-=======
       {/* Modal Preview */}
       {modalItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1230,7 +914,6 @@ export default function CollectionPage() {
           </div>
         </div>
       )}
->>>>>>> b39f14f (init: clean history without build artifacts)
     </div>
   );
 }
