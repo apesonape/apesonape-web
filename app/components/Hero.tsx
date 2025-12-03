@@ -66,7 +66,7 @@ export default function Hero({
       >
         <div className="relative w-full h-full">
           <video
-            src="/apes-on-ape-video.mp4"
+            src="/home-video.mp4"
             autoPlay
             muted
             loop

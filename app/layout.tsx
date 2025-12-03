@@ -3,6 +3,8 @@ import { Raleway } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import SoundCloudPlayer from "./components/SoundCloudPlayer";
+import HolidayDecor from "./components/HolidayDecor";
+import HolidayPopup from "./components/HolidayPopup";
 
 const raleway = Raleway({
   variable: "--font-raleway",
@@ -59,17 +61,37 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Enable Christmas vibes automatically in December or via env override
+  const holidayMode = process.env.NEXT_PUBLIC_HOLIDAY_MODE?.toLowerCase();
+  const isDecember = new Date().getMonth() === 11;
+  const holiday = holidayMode === 'christmas' || (!holidayMode && isDecember) ? 'christmas' : undefined;
+
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" data-holiday={holiday}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.png" type="image/png" />
         <link rel="apple-touch-icon" href="/apechain.png" />
+        {/* Speed up first connections to IPFS gateways used in collection */}
+        <link rel="preconnect" href="https://moccasin-brilliant-silkworm-382.mypinata.cloud" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://moccasin-brilliant-silkworm-382.mypinata.cloud" />
+        <link rel="preconnect" href="https://gateway.pinata.cloud" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://gateway.pinata.cloud" />
+        <link rel="preconnect" href="https://cloudflare-ipfs.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://cloudflare-ipfs.com" />
+        <link rel="preconnect" href="https://ipfs.io" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://ipfs.io" />
+        <link rel="preconnect" href="https://nftstorage.link" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://nftstorage.link" />
+        <link rel="preconnect" href="https://dweb.link" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://dweb.link" />
       </head>
       <body
         className={`${raleway.variable} antialiased font-sans`}
       >
         <ThemeProvider>
+          {holiday === 'christmas' ? <HolidayDecor /> : null}
+          {holiday === 'christmas' ? <HolidayPopup /> : null}
           {children}
           <SoundCloudPlayer />
         </ThemeProvider>

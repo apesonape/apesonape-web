@@ -46,7 +46,7 @@ declare global {
   }
 }
 
-const PLAYLIST_URL = 'https://soundcloud.com/apesonape/sets/sinatra-season-by-dr-dibs';
+const PLAYLIST_URL = 'https://soundcloud.com/apesonape/sets/saint-dank-by-smokethatdank';
 
 export default function SoundCloudPlayer() {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);

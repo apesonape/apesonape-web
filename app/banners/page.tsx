@@ -19,6 +19,8 @@ type GeneratedItem = {
 
 const BANNER_WIDTH = 1500;
 const BANNER_HEIGHT = 500;
+// Prefer CDN thumbnails when available
+const THUMBS_BASE = 'https://bqcrbcpmimfojnjdhvrz.supabase.co/storage/v1/object/public/collection/collection-thumbs';
 
 type BannerStyle = 'neon' | 'mesh' | 'grid' | 'rings' | 'minimal' | 'diagonal' | 'halftone' | 'wave' | 'noise';
 type BannerSettings = {
@@ -502,6 +504,18 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+async function loadImageWithFallbacks(sources: string[]): Promise<HTMLImageElement> {
+  for (const s of sources) {
+    try {
+      const img = await loadImage(s);
+      return img;
+    } catch {
+      // try next
+    }
+  }
+  throw new Error('All sources failed');
+}
+
 async function renderBannerFromNFT(
   nft: MagicEdenNFT,
   opts?: { overlayText?: string; settings?: BannerSettings }
@@ -540,7 +554,9 @@ async function renderBannerFromNFT(
 
   // NFT image frame
   try {
-    const img = await loadImage(nft.image);
+    const tokenNumeric = parseInt(String(nft.id), 10);
+    const cdnFirst = !isNaN(tokenNumeric) ? [`${THUMBS_BASE}/${tokenNumeric}.webp`] : [];
+    const img = await loadImageWithFallbacks([...cdnFirst, nft.image]);
     const frameH = Math.min(480, img.height);
     const targetH = Math.min(BANNER_HEIGHT - 80, frameH);
     const targetW = Math.floor((img.width / img.height) * targetH);

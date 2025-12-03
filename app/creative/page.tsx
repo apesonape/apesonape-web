@@ -3,10 +3,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import NextImage from 'next/image';
-import bannerExample from '@/public/banner-example.png';
-import zaaArtwork from '@/public/artwork/zaa-artwork.png';
-import { Wand2, ImagePlus } from 'lucide-react';
+
+import { Wand2, ImagePlus, Shirt } from 'lucide-react';
 import Nav from '../components/Nav';
 import Footer from '../components/Footer';
 
@@ -30,9 +28,9 @@ export default function CreativeHubPage() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-hero-blue/10 border border-hero-blue/30 mb-3">
             <Wand2 className="w-4 h-4 text-hero-blue" />
-            <span className="text-xs text-hero-blue">Creative Lab</span>
+            <span className="text-xs text-hero-blue">Tools</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-hero-blue">Create with Apes On Ape</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-hero-blue">Tools</h1>
           <p className="text-off-white/80 max-w-3xl mt-4">
             Welcome to the creative hub. A place where you can create various type of content with your NFT — all in the AoA style.
           </p>
@@ -58,44 +56,29 @@ export default function CreativeHubPage() {
           transition={{ duration: 0.4, delay: 0.15 }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
         >
+          {/* Wardrobe card */}
+          <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
+            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
+              <Shirt className="w-4 h-4" />
+              <span>Beta</span>
+            </div>
+            <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Wardrobe</h3>
+            <p className="text-sm text-off-white/80 mb-3">Add clothes and customize your Ape with overlay layers. Upload transparent PNGs and position them.</p>
+            <Link href="/creative/wardrobe" className="btn-secondary inline-flex items-center w-fit">Customize Ape</Link>
+          </div>
+
           <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
             <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
               <ImagePlus className="w-4 h-4" />
               <span>Available</span>
             </div>
             <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Banner Generator</h3>
-            <div className="relative w-full rounded-lg overflow-hidden border border-white/10 mb-3">
-              <NextImage
-                src={bannerExample}
-                alt="Example social banner"
-                width={1200}
-                height={400}
-                priority
-                className="w-full h-auto object-cover"
-              />
-            </div>
+            {/* Image preview removed */}
             <p className="text-sm text-off-white/80 mb-3">Create a customized social banner from your NFT.</p>
             <Link href="/creative/banners" className="btn-secondary inline-flex items-center w-fit">Open</Link>
           </div>
 
-          {/* Creator Spotlight card */}
-          <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
-            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
-              <span>New</span>
-            </div>
-            <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Creator Spotlight</h3>
-            <div className="relative w-full rounded-lg overflow-hidden border border-white/10 mb-3">
-              <NextImage
-                src={zaaArtwork}
-                alt="Creator Spotlight sample"
-                width={1200}
-                height={400}
-                className="w-full h-auto object-cover"
-              />
-            </div>
-            <p className="text-sm text-off-white/80 mb-3">Discover art and videos made by the Apes On Ape community. Stories, credits, and links to creators&rsquo; profiles.</p>
-            <Link href="/creative/spotlight" className="btn-secondary inline-flex items-center w-fit">Explore</Link>
-          </div>
+          {/* Creator Spotlight card removed */}
 
           <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
             <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
