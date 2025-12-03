@@ -6,9 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate:manifest": "node scripts/generate-collection-manifest.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.86.0",
     "axios": "^1.12.2",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.471.0",

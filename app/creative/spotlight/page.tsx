@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 'use client';
 
 import React, { useEffect, useRef } from 'react';
@@ -206,3 +207,11 @@ export default function CreatorSpotlightPage() {
 }
 
 
+=======
+import { redirect } from 'next/navigation';
+
+export default function Page() {
+	redirect('/gallery?category=spotlight');
+}
+
+>>>>>>> b39f14f (init: clean history without build artifacts)

@@ -46,7 +46,11 @@ declare global {
   }
 }
 
+<<<<<<< HEAD
 const PLAYLIST_URL = 'https://soundcloud.com/apesonape/sets/sinatra-season-by-dr-dibs';
+=======
+const PLAYLIST_URL = 'https://soundcloud.com/apesonape/sets/saint-dank-by-smokethatdank';
+>>>>>>> b39f14f (init: clean history without build artifacts)
 
 export default function SoundCloudPlayer() {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);

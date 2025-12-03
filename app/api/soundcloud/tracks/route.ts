@@ -75,6 +75,7 @@ export async function GET() {
 function getMockTracks(): Track[] {
   return [
     {
+<<<<<<< HEAD
       id: 'dibs-1',
       title: 'Sinatra Season - Track 1',
       artist: 'Dr. DIBS',
@@ -105,6 +106,38 @@ function getMockTracks(): Track[] {
       streamUrl: 'https://soundcloud.com/apesonape/sets/sinatra-season-by-dr-dibs',
       permalink: 'https://soundcloud.com/apesonape/sets/sinatra-season-by-dr-dibs',
       description: 'From the Sinatra Season playlist by Dr. DIBS',
+=======
+      id: 'std-1',
+      title: 'Saint Dank - Track 1',
+      artist: 'SmokeThatDank',
+      duration: 225,
+      artwork: '/AoA-placeholder-apecoinblue.jpg',
+      streamUrl: 'https://soundcloud.com/apesonape/sets/saint-dank-by-smokethatdank',
+      permalink: 'https://soundcloud.com/apesonape/sets/saint-dank-by-smokethatdank',
+      description: 'From the Saint Dank playlist by SmokeThatDank',
+      isSpotlight: true,
+    },
+    {
+      id: 'std-2',
+      title: 'Saint Dank - Track 2',
+      artist: 'SmokeThatDank',
+      duration: 252,
+      artwork: '/AoA-placeholder-apecoinblue.jpg',
+      streamUrl: 'https://soundcloud.com/apesonape/sets/saint-dank-by-smokethatdank',
+      permalink: 'https://soundcloud.com/apesonape/sets/saint-dank-by-smokethatdank',
+      description: 'From the Saint Dank playlist by SmokeThatDank',
+      isSpotlight: false,
+    },
+    {
+      id: 'std-3',
+      title: 'Saint Dank - Track 3',
+      artist: 'SmokeThatDank',
+      duration: 208,
+      artwork: '/AoA-placeholder-apecoinblue.jpg',
+      streamUrl: 'https://soundcloud.com/apesonape/sets/saint-dank-by-smokethatdank',
+      permalink: 'https://soundcloud.com/apesonape/sets/saint-dank-by-smokethatdank',
+      description: 'From the Saint Dank playlist by SmokeThatDank',
+>>>>>>> b39f14f (init: clean history without build artifacts)
       isSpotlight: false,
     },
     {

@@ -47,22 +47,37 @@ export default function SoundPage() {
             <div className="grid md:grid-cols-2 gap-8">
               <div>
                 <h3 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
+<<<<<<< HEAD
                   Sinatra Season
                 </h3>
                 <p className="text-xl mb-6" style={{ color: 'var(--ape-gray)' }}>
                   by Dr. DIBS
+=======
+                  Saint Dank
+                </h3>
+                <p className="text-xl mb-6" style={{ color: 'var(--ape-gray)' }}>
+                  by SmokeThatDank
+>>>>>>> b39f14f (init: clean history without build artifacts)
                 </p>
                 
                 <div className="mb-6">
                   <h4 className="text-hero-blue font-semibold mb-2">About this playlist:</h4>
                   <p className="leading-relaxed mb-4" style={{ color: 'var(--foreground)' }}>
+<<<<<<< HEAD
                     A carefully curated collection from Dr. DIBS, bringing smooth vibes and creative energy to the Apes On Ape community.
+=======
+                    A high-energy set by SmokeThatDank, crafted for the Apes On Ape community.
+>>>>>>> b39f14f (init: clean history without build artifacts)
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-3">
                   <a
+<<<<<<< HEAD
                     href="https://soundcloud.com/apesonape/sets/sinatra-season-by-dr-dibs"
+=======
+                    href="https://soundcloud.com/apesonape/sets/saint-dank-by-smokethatdank"
+>>>>>>> b39f14f (init: clean history without build artifacts)
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-primary flex items-center justify-center gap-2"
@@ -90,7 +105,11 @@ export default function SoundPage() {
                   scrolling="no"
                   frameBorder="no"
                   allow="autoplay"
+<<<<<<< HEAD
                   src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/apesonape/sets/sinatra-season-by-dr-dibs&color=%230054f9&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"
+=======
+                  src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/apesonape/sets/saint-dank-by-smokethatdank&color=%230054f9&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"
+>>>>>>> b39f14f (init: clean history without build artifacts)
                   className="rounded-xl border border-white/10"
                 ></iframe>
                 <div className="mt-2 text-xs text-gray-500 text-center">
@@ -104,13 +123,22 @@ export default function SoundPage() {
                     Apes on Ape
                   </a> · 
                   <a 
+<<<<<<< HEAD
                     href="https://soundcloud.com/apesonape/sets/sinatra-season-by-dr-dibs" 
                     title="Sinatra Season by Dr. DIBS" 
+=======
+                    href="https://soundcloud.com/apesonape/sets/saint-dank-by-smokethatdank" 
+                    title="Saint Dank by SmokeThatDank" 
+>>>>>>> b39f14f (init: clean history without build artifacts)
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="hover:text-hero-blue transition-colors"
                   >
+<<<<<<< HEAD
                     Sinatra Season by Dr. DIBS
+=======
+                    Saint Dank by SmokeThatDank
+>>>>>>> b39f14f (init: clean history without build artifacts)
                   </a>
                 </div>
               </div>

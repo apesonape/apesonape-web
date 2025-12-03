@@ -25,7 +25,12 @@ export default function Nav() {
     { href: '/', label: 'Home' },
     { href: '/collection', label: 'Collection' },
     { href: '/sound', label: 'Sound' },
+<<<<<<< HEAD
     { href: '/creative', label: 'Creative' },
+=======
+    { href: '/gallery', label: 'Gallery' },
+    { href: '/creative', label: 'Tools' },
+>>>>>>> b39f14f (init: clean history without build artifacts)
     { href: 'https://arcade.apesonape.io', label: 'Arcade', external: true },
   ];
 
