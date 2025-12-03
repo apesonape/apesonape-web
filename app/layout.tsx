@@ -72,6 +72,19 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.png" type="image/png" />
         <link rel="apple-touch-icon" href="/apechain.png" />
+        {/* Speed up first connections to IPFS gateways used in collection */}
+        <link rel="preconnect" href="https://moccasin-brilliant-silkworm-382.mypinata.cloud" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://moccasin-brilliant-silkworm-382.mypinata.cloud" />
+        <link rel="preconnect" href="https://gateway.pinata.cloud" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://gateway.pinata.cloud" />
+        <link rel="preconnect" href="https://cloudflare-ipfs.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://cloudflare-ipfs.com" />
+        <link rel="preconnect" href="https://ipfs.io" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://ipfs.io" />
+        <link rel="preconnect" href="https://nftstorage.link" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://nftstorage.link" />
+        <link rel="preconnect" href="https://dweb.link" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://dweb.link" />
       </head>
       <body
         className={`${raleway.variable} antialiased font-sans`}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Filter, TrendingUp, Users, Layers, ExternalLink, ShoppingBag, X } from 'lucide-react';
+import { ExternalLink, ShoppingBag, X } from 'lucide-react';
 import Nav from '../components/Nav';
 import Image from 'next/image';
 import Footer from '../components/Footer';
@@ -13,15 +13,22 @@ import Footer from '../components/Footer';
 const EXCLUDED_TRAIT_TYPES = new Set(['Background', 'BG', 'Background Color', 'BackgroundColor']);
 
 // Fixed collection: only this metadata CID is used
-const DEFAULT_METADATA_CID = process.env.NEXT_PUBLIC_DEFAULT_METADATA_CID || 'bafybeientok65jcovpzki5t64qdq3mqsfty5vkur2nwmbs6zibzei37vdy';
+const DEFAULT_METADATA_CID = process.env.NEXT_PUBLIC_DEFAULT_METADATA_CID || 'bafybeiaizsmuaj5ubnsh6mtb53ngqffyhrqus7kdqihfbtbafq4c75gjny';
+// Optional CDN base for prebuilt indices (e.g., Supabase Storage public URL ending with /collection-index/)
+const CDN_BASE = 'https://bqcrbcpmimfojnjdhvrz.supabase.co/storage/v1/object/public/collection/collection-index/';
+// CDN thumbnails base (512px WebP), uploaded by the thumbnail builder
+const THUMBS_BASE = 'https://bqcrbcpmimfojnjdhvrz.supabase.co/storage/v1/object/public/collection/collection-thumbs';
 
-interface CollectionStats {
-  floorPrice: number;
-  listedCount: number;
-  totalSupply: number;
-  uniqueHolders: number;
-  volume24hr: number;
-}
+// Preferred IPFS gateways (first has priority; client-side image fallback will rotate on failure)
+const IPFS_GATEWAYS = [
+  // Allow overriding with a custom Pinata subdomain gateway
+  (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_PINATA_SUBDOMAIN_GATEWAY : undefined) || 'https://moccasin-brilliant-silkworm-382.mypinata.cloud/ipfs',
+  'https://gateway.pinata.cloud/ipfs',
+  'https://cloudflare-ipfs.com/ipfs',
+  'https://ipfs.io/ipfs',
+  'https://nftstorage.link/ipfs',
+  'https://dweb.link/ipfs',
+] as const;
 
 export default function CollectionPage() {
   const searchParams = useSearchParams();
@@ -34,13 +41,13 @@ export default function CollectionPage() {
     id: string;
     name: string;
     imageUrl: string;
+    imageUrls?: string[]; // fallback candidates across gateways
     tokenId?: string;
     traits?: { name: string; value: string; rarity: number }[];
   };
   const [driveItems, setDriveItems] = useState<DriveItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<DriveItem[]>([]);
   const [displayedItems, setDisplayedItems] = useState<DriveItem[]>([]);
-  const [stats, setStats] = useState<CollectionStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -67,6 +74,10 @@ export default function CollectionPage() {
   const [activeTraitType, setActiveTraitType] = useState<string>('');
 
   const itemsPerPage = 50;
+  const usePagination = false; // use infinite scroll
+
+  // Local search input for token ID
+  const [idQuery, setIdQuery] = useState<string>('');
 
   // Dynamic trait types discovered from metadata
   const [traitTypes, setTraitTypes] = useState<string[]>([]);
@@ -78,6 +89,48 @@ export default function CollectionPage() {
   const [traitsVersion, setTraitsVersion] = useState(0); // bump to recompute derived state
   // Guard against duplicate metadata fetches per token
   const fetchedMetaRef = useRef<Set<string>>(new Set());
+
+  // Optional CDN indices (loaded when CDN_BASE present)
+  const [cdnTokensById, setCdnTokensById] = useState<Record<string, { image: string; attributes: Array<Record<string, unknown>> }> | null>(null);
+  const [cdnTraitIndex, setCdnTraitIndex] = useState<Record<string, Record<string, number[]>> | null>(null);
+  const [cdnTraitsMeta, setCdnTraitsMeta] = useState<{ types: string[]; valuesByType: Record<string, string[]>; counts: Record<string, Record<string, number>> } | null>(null);
+
+  useEffect(() => {
+    if (!CDN_BASE) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const base = CDN_BASE.replace(/\/+$/, '');
+        const [tokensRes, traitsRes, indexRes] = await Promise.all([
+          fetch(`${base}/tokens.json`, { cache: 'force-cache' }),
+          fetch(`${base}/traits.json`, { cache: 'force-cache' }),
+          fetch(`${base}/traitIndex.json`, { cache: 'force-cache' }),
+        ]);
+        if (!tokensRes.ok || !traitsRes.ok || !indexRes.ok) return;
+        const [tokens, traitsMeta, traitIndex] = await Promise.all([tokensRes.json(), traitsRes.json(), indexRes.json()]);
+        if (cancelled) return;
+        const byId: Record<string, { image: string; attributes: Array<Record<string, unknown>> }> = {};
+        for (const t of tokens as Array<{ id: number; image: string; attributes: Array<Record<string, unknown>> }>) {
+          byId[String(t.id)] = { image: t.image || '', attributes: Array.isArray(t.attributes) ? t.attributes : [] };
+        }
+        setCdnTokensById(byId);
+        setCdnTraitIndex(traitIndex || {});
+        setCdnTraitsMeta(traitsMeta || null);
+        // If traits meta present, prime UI lists
+        if (traitsMeta?.types && traitsMeta?.valuesByType) {
+          const map: Record<string, Set<string>> = {};
+          for (const type of traitsMeta.types) {
+            map[type] = new Set(traitsMeta.valuesByType[type] || []);
+          }
+          setAvailableValuesByType(map);
+          setTraitTypes(traitsMeta.types.slice().sort());
+        }
+      } catch {
+        // ignore; fallback to IPFS metadata
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Update URL with filters
   const updateURL = useCallback(() => {
@@ -107,31 +160,61 @@ export default function CollectionPage() {
     }
     if (traitTypes.length > 0) setActiveTraitType(traitTypes[0]);
   }, [showTraitFilters, availableValuesByType, traitTypes, activeTraitType]);
-  // Normalize IPFS-like inputs to Pinata gateway
-  function normalizeToPinataGateway(input: string | undefined | null): string {
-    if (!input) return '';
+  // Normalize IPFS-like inputs to an array of gateway candidates
+  function normalizeToGatewayCandidates(input: string | undefined | null): string[] {
+    if (!input) return [];
     try {
       // If it's a full URL already
       if (/^https?:\/\//i.test(input)) {
         const idx = input.indexOf('/ipfs/');
         if (idx !== -1) {
-          return `https://gateway.pinata.cloud${input.slice(idx)}`;
+          const path = input.slice(idx + '/ipfs/'.length); // after /ipfs/
+          return IPFS_GATEWAYS.map(base => `${base}/${path}`);
         }
-        return input;
+        // Not an IPFS URL; return as-is (single candidate)
+        return [input];
       }
       // ipfs://<cid>(/path)
       if (input.startsWith('ipfs://')) {
         const cidPath = input.replace('ipfs://', '');
-        return `https://gateway.pinata.cloud/ipfs/${cidPath}`;
+        return IPFS_GATEWAYS.map(base => `${base}/${cidPath}`);
       }
       // Raw CID or CID with path
       if (/^(Qm[A-Za-z0-9]+|bafy[A-Za-z0-9]+)(\/.*)?$/.test(input)) {
-        return `https://gateway.pinata.cloud/ipfs/${input}`;
+        return IPFS_GATEWAYS.map(base => `${base}/${input}`);
       }
-      return input;
+      return [input];
     } catch {
-      return input as string;
+      return [input as string];
     }
+  }
+
+  // Component to render an image with IPFS gateway fallback rotation
+  function FallbackImage({
+    srcs,
+    alt,
+    sizes,
+    className,
+  }: {
+    srcs: string[];
+    alt: string;
+    sizes?: string;
+    className?: string;
+  }) {
+    const [index, setIndex] = useState(0);
+    const activeSrc = srcs[Math.min(index, srcs.length - 1)];
+    return (
+      <Image
+        src={activeSrc}
+        alt={alt}
+        fill
+        sizes={sizes}
+        className={className}
+        onError={() => {
+          setIndex(i => (i + 1 < srcs.length ? i + 1 : i));
+        }}
+      />
+    );
   }
 
   // Load collection using fixed IPFS metadata CID
@@ -153,7 +236,6 @@ export default function CollectionPage() {
           setFilteredItems([]);
           setDisplayedItems([]);
           setHasMore(false);
-          setStats(null);
           setTotalCount(0);
           setPlannedUntil(-1);
           return;
@@ -180,11 +262,6 @@ export default function CollectionPage() {
         setPlannedUntil(seedEnd);
 
         setDriveItems(items);
-
-        // Load stats
-        const statsResponse = await fetch('/api/me/stats');
-        const statsData = await statsResponse.json();
-        setStats(statsData);
       } catch (error) {
         console.error('Error loading collection data:', error);
       } finally {
@@ -229,7 +306,7 @@ export default function CollectionPage() {
   useEffect(() => {
     const cid = DEFAULT_METADATA_CID;
     if (!cid) return;
-    const gatewayBase = 'https://gateway.pinata.cloud/ipfs';
+    const gatewayBase = IPFS_GATEWAYS[0];
 
     let cancelled = false;
     const missing = displayedItems.filter(it => {
@@ -244,6 +321,26 @@ export default function CollectionPage() {
 
     (async () => {
       const updates: Array<Promise<void>> = [];
+      // Prefer CDN indices when available
+      if (CDN_BASE && cdnTokensById) {
+        for (const it of missing) {
+          const token = it.tokenId!;
+          fetchedMetaRef.current.add(token);
+          const record = cdnTokensById[token];
+          if (!record) continue;
+          const imageCandidates = (() => {
+            const fromMeta = normalizeToGatewayCandidates(record.image || '');
+            // Prepend CDN thumb
+            const thumb = `${THUMBS_BASE}/${token}.webp`;
+            return [thumb, ...fromMeta];
+          })();
+          applyTraitsToCaches(token, Array.isArray(record.attributes) ? record.attributes : []);
+          if (cancelled) continue;
+          setDriveItems(prev => prev.map(d => d.id === it.id ? { ...d, imageUrl: (imageCandidates[0] || d.imageUrl), imageUrls: imageCandidates } : d));
+          setDisplayedItems(prev => prev.map(d => d.id === it.id ? { ...d, imageUrl: (imageCandidates[0] || d.imageUrl), imageUrls: imageCandidates } : d));
+        }
+        return;
+      }
       for (const it of missing) {
         const token = it.tokenId!;
         // Mark as in-flight to avoid duplicate requests caused by re-renders
@@ -255,17 +352,17 @@ export default function CollectionPage() {
               const res = await fetch(url, { cache: 'force-cache' });
               if (!res.ok) return;
               const meta = await res.json();
-              const image = normalizeToPinataGateway(meta?.image || meta?.image_url || '');
+              const imageCandidates = normalizeToGatewayCandidates(meta?.image || meta?.image_url || '');
               const attributes = Array.isArray(meta?.attributes) ? meta.attributes : [];
               applyTraitsToCaches(token, attributes);
               if (cancelled) return;
               setDriveItems(prev => {
-                const next = prev.map(d => d.id === it.id ? { ...d, imageUrl: image || d.imageUrl } : d);
+                const next = prev.map(d => d.id === it.id ? { ...d, imageUrl: (imageCandidates[0] || d.imageUrl), imageUrls: imageCandidates } : d);
                 return next;
               });
               // Keep displayed items in sync without resetting pagination
               setDisplayedItems(prev =>
-                prev.map(d => d.id === it.id ? { ...d, imageUrl: image || d.imageUrl } : d)
+                prev.map(d => d.id === it.id ? { ...d, imageUrl: (imageCandidates[0] || d.imageUrl), imageUrls: imageCandidates } : d)
               );
             } catch {
               // ignore per-item errors
@@ -286,9 +383,20 @@ export default function CollectionPage() {
     if (!needAll) return;
     const cid = DEFAULT_METADATA_CID;
     if (!cid) return;
-    const gatewayBase = 'https://gateway.pinata.cloud/ipfs';
+    const gatewayBase = IPFS_GATEWAYS[0];
     let cancelled = false;
-    const queue = driveItems.filter(it => it.tokenId && !traitsCacheRef.current[it.tokenId!]).map(it => it.tokenId!) as string[];
+
+    // If CDN trait metadata is present, skip IPFS-wide trait fetching
+    if (CDN_BASE && cdnTraitsMeta && cdnTraitIndex) {
+      return () => { cancelled = true; };
+    }
+
+    // Queue across the full collection (0..totalCount-1) to ensure filters cover all tokens
+    const queue: string[] = [];
+    for (let i = 0; i < totalCount; i++) {
+      const token = String(i);
+      if (!traitsCacheRef.current[token]) queue.push(token);
+    }
     if (queue.length === 0) return;
     const concurrency = 4;
     let idx = 0;
@@ -316,21 +424,33 @@ export default function CollectionPage() {
 
   // Recompute available values (union) from the traits cache
   useEffect(() => {
-    const map: Record<string, Set<string>> = {};
+    // Start from CDN traits meta if available to ensure full coverage,
+    // then merge in any values discovered from metadata fetches.
+    const unionMap: Record<string, Set<string>> = {};
+
+    if (cdnTraitsMeta?.types && cdnTraitsMeta?.valuesByType) {
+      for (const type of cdnTraitsMeta.types) {
+        if (EXCLUDED_TRAIT_TYPES.has(type)) continue;
+        unionMap[type] = new Set<string>(cdnTraitsMeta.valuesByType[type] || []);
+      }
+    }
+
     for (const tokenId in traitsCacheRef.current) {
       const traits = traitsCacheRef.current[tokenId] || [];
       for (const t of traits) {
         if (EXCLUDED_TRAIT_TYPES.has(t.name)) continue;
-        if (!map[t.name]) map[t.name] = new Set<string>();
-        if (t.value) map[t.name].add(t.value);
+        if (!unionMap[t.name]) unionMap[t.name] = new Set<string>();
+        if (t.value) unionMap[t.name].add(t.value);
       }
     }
-    setAvailableValuesByType(map);
-    // Also refresh trait types order
-    const types = Object.keys(map).sort();
+
+    setAvailableValuesByType(unionMap);
+
+    // Refresh trait types order from the union
+    const types = Object.keys(unionMap).sort();
     types.forEach(t => seenTraitTypesRef.current.add(t));
-    setTraitTypes(Array.from(seenTraitTypesRef.current).sort());
-  }, [traitsVersion]);
+    setTraitTypes(Array.from(new Set(types)).sort());
+  }, [traitsVersion, cdnTraitsMeta]);
 
   // Sanitize selected filters and active type if an excluded type sneaks in
   useEffect(() => {
@@ -352,27 +472,108 @@ export default function CollectionPage() {
   }, [traitTypes, activeTraitType]); 
   // Apply filters and sorting for drive items
   useEffect(() => {
-    let filtered = [...driveItems];
+    // Build set of matching tokenIds across the full collection (0..totalCount-1)
+    // Then ensure driveItems has entries for those tokens (lightweight stubs).
+    const matchIds = new Set<string>();
 
-    // Search filter
-    if (searchTerm) {
-      const q = searchTerm.trim();
-      filtered = filtered.filter(item => item.tokenId && item.tokenId.includes(q));
-    }
+    const q = (searchTerm || '').trim();
+    const hasSearch = q.length > 0;
 
-    // Trait filters: AND across types
     const activeTypes = Object.entries(selectedByType).filter(([, s]) => s.size > 0);
-    if (activeTypes.length > 0) {
-      filtered = filtered.filter(item => {
-        const tokenId = item.tokenId;
-        if (!tokenId) return false;
-        const traits = traitsCacheRef.current[tokenId] || [];
-        if (traits.length === 0) return false;
-        return activeTypes.every(([type, values]) =>
-          traits.some(t => t.name === type && values.has(t.value))
-      );
+    const hasTraitFilters = activeTypes.length > 0;
+
+    // If neither search nor trait filters, fall back to existing items (paged planning)
+    if (!hasSearch && !hasTraitFilters) {
+      // Sorting
+      const sorted = [...driveItems].sort((a, b) => {
+        switch (sortBy) {
+          case 'token-asc': {
+            const ai = a.tokenId ? parseInt(a.tokenId, 10) : Number.MAX_SAFE_INTEGER;
+            const bi = b.tokenId ? parseInt(b.tokenId, 10) : Number.MAX_SAFE_INTEGER;
+            return ai - bi;
+          }
+          case 'token-desc': {
+            const ai = a.tokenId ? parseInt(a.tokenId, 10) : Number.MIN_SAFE_INTEGER;
+            const bi = b.tokenId ? parseInt(b.tokenId, 10) : Number.MIN_SAFE_INTEGER;
+            return bi - ai;
+          }
+          default:
+            return 0;
+        }
       });
+      setFilteredItems(sorted);
+      setPage(1);
+      setDisplayedItems(sorted.slice(0, itemsPerPage));
+      // Even if we only have the first planned chunk, allow infinite scroll to plan more
+      const canPlanMore = (plannedUntil + 1) < totalCount;
+      setHasMore(sorted.length > itemsPerPage || canPlanMore);
+      return;
     }
+
+    // 1) Match by search across 0..totalCount-1
+    if (hasSearch) {
+      for (let i = 0; i < totalCount; i++) {
+        const token = String(i);
+        if (token.includes(q)) matchIds.add(token);
+      }
+    }
+
+    // 2) Match by trait filters
+    if (hasTraitFilters) {
+      if (CDN_BASE && cdnTraitIndex) {
+        // Use prebuilt index to compute matches quickly
+        let first = true;
+        let working: Set<string> = new Set();
+        for (const [type, values] of activeTypes) {
+          const mapForType = cdnTraitIndex[type] || {};
+          const idsForType = new Set<string>();
+          values.forEach(v => {
+            const arr = mapForType[v] || [];
+            for (const id of arr) idsForType.add(String(id));
+          });
+          if (first) {
+            working = idsForType;
+            first = false;
+          } else {
+            working = new Set(Array.from(working).filter(x => idsForType.has(x)));
+          }
+        }
+        for (const id of working) matchIds.add(id);
+      } else {
+        // Fallback to traits cache assembled from per-token metadata
+        for (let i = 0; i < totalCount; i++) {
+          const token = String(i);
+          const traits = traitsCacheRef.current[token] || [];
+          if (traits.length === 0) continue;
+          const ok = activeTypes.every(([type, values]) =>
+            traits.some(t => t.name === type && values.has(t.value))
+          );
+          if (ok) matchIds.add(token);
+        }
+      }
+    }
+
+    // Ensure driveItems contains stubs for all matchIds
+    if (matchIds.size > 0) {
+      const existing = new Set(driveItems.map(d => d.tokenId || ''));
+      const additions: DriveItem[] = [];
+      matchIds.forEach(token => {
+        if (!existing.has(token)) {
+          additions.push({
+            id: token,
+            name: token,
+            imageUrl: '',
+            tokenId: token,
+          });
+        }
+      });
+      if (additions.length > 0) {
+        setDriveItems(prev => [...prev, ...additions]);
+      }
+    }
+
+    // Now filter driveItems by the computed matchIds
+    let filtered = driveItems.filter(item => item.tokenId && matchIds.has(item.tokenId));
 
     // Sorting
     filtered.sort((a, b) => {
@@ -395,22 +596,24 @@ export default function CollectionPage() {
     setFilteredItems(filtered);
     setPage(1);
     setDisplayedItems(filtered.slice(0, itemsPerPage));
-    setHasMore(filtered.length > itemsPerPage);
+    // If filters are active, we still may plan more tokens to discover additional matches
+    const canPlanMore = (plannedUntil + 1) < totalCount;
+    setHasMore(filtered.length > itemsPerPage || canPlanMore);
   }, [driveItems, searchTerm, sortBy, selectedByType]);
 
-  // Infinite scroll
+  // Infinite scroll: append more items when sentinel enters view
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
         if (!entries[0].isIntersecting || !hasMore || loading) return;
-          const nextPage = page + 1;
-          const start = nextPage * itemsPerPage;
-          const end = start + itemsPerPage;
+        const nextPage = page + 1;
+        const start = nextPage * itemsPerPage;
+        const end = start + itemsPerPage;
         const newItems = filteredItems.slice(start, end);
-          
-          if (newItems.length > 0) {
+
+        if (newItems.length > 0) {
           setDisplayedItems(prev => [...prev, ...newItems]);
-            setPage(nextPage);
+          setPage(nextPage);
           // We still may have more if filteredItems has more rows or if more tokens can be planned
           setHasMore(end < filteredItems.length || (plannedUntil + 1) < (totalCount));
         } else {
@@ -506,42 +709,10 @@ export default function CollectionPage() {
           transition={{ duration: 0.6 }}
         >
             <h1 className="section-heading mb-6 text-center" style={{ color: 'var(--foreground)' }}>
-            Collection Gallery
+            Collection
           </h1>
-            
-            {/* Stats Grid */}
-            {stats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div className="glass-dark rounded-xl p-4 text-center">
-                  <Layers className="w-6 h-6 text-neon-cyan mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-neon-cyan">
-                    {stats.totalSupply}
-                  </p>
-                  <p className="text-sm" style={{ color: 'var(--ape-gray)' }}>Total Supply</p>
-                </div>
-                <div className="glass-dark rounded-xl p-4 text-center">
-                  <Users className="w-6 h-6 text-neon-green mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-neon-green">
-                    {stats.uniqueHolders}
-                  </p>
-                  <p className="text-sm" style={{ color: 'var(--ape-gray)' }}>Owners</p>
-                </div>
-                <div className="glass-dark rounded-xl p-4 text-center">
-                  <TrendingUp className="w-6 h-6 text-ape-gold mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-ape-gold">
-                    {stats.floorPrice.toFixed(2)} APE
-                  </p>
-                  <p className="text-sm" style={{ color: 'var(--ape-gray)' }}>Floor Price</p>
-                </div>
-                <div className="glass-dark rounded-xl p-4 text-center">
-                  <Filter className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-purple-400">
-                    {stats.listedCount}
-                  </p>
-                  <p className="text-sm" style={{ color: 'var(--ape-gray)' }}>Listed</p>
-                </div>
-              </div>
-            )}
+
+            {/* Stats removed by request */}
 
             {/* Marketplace Links */}
             <motion.div
@@ -642,6 +813,39 @@ export default function CollectionPage() {
           <div className="grid lg:grid-cols-5 gap-6">
             {/* Left: Filters */}
             <aside className="lg:col-span-1 space-y-4">
+              {/* Search by ID – positioned above traits */}
+              <div className="glass-dark rounded-xl p-3 border border-white/10">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="Search by token ID…"
+                    value={idQuery}
+                    onChange={(e) => setIdQuery(e.target.value)}
+                    className="w-full px-2 py-1 glass border border-white/10 rounded text-xs placeholder-gray-400 focus:border-hero-blue focus:outline-none"
+                    style={{ color: 'var(--foreground)' }}
+                  />
+                  <button
+                    className="btn-primary px-3 py-1 text-xs"
+                    onClick={() => {
+                      const q = (idQuery || '').trim();
+                      setSearchTerm(q);
+                      setPage(1);
+                    }}
+                  >
+                    Search
+                  </button>
+                  <button
+                    className="btn-secondary px-3 py-1 text-xs"
+                    onClick={() => {
+                      setIdQuery('');
+                      clearFilters();
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
               {/* Selected chips */}
               {selectedChips.length > 0 && (
                 <div className="glass-dark rounded-xl p-3 border border-white/10">
@@ -710,7 +914,7 @@ export default function CollectionPage() {
                           </button>
                         );
                       })}
-                  </div>
+                </div>
             </div>
 
                 {/* Active type selector */}
@@ -804,11 +1008,22 @@ export default function CollectionPage() {
                         onClick={() => openModal(item)}
                       >
                         <div className="relative aspect-square">
-                      {item.imageUrl ? (
-                        <Image
-                          src={item.imageUrl}
+                      {item.tokenId ? (
+                        <FallbackImage
+                          srcs={[
+                            `${THUMBS_BASE}/${item.tokenId}.webp`,
+                            ...(item.imageUrls && item.imageUrls.length > 0
+                              ? item.imageUrls
+                              : (item.imageUrl ? [item.imageUrl] : [])),
+                          ]}
                           alt={item.name}
-                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                          className="object-cover"
+                        />
+                      ) : item.imageUrl ? (
+                        <FallbackImage
+                          srcs={[item.imageUrl]}
+                          alt={item.name}
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
                           className="object-cover"
                         />
@@ -860,6 +1075,8 @@ export default function CollectionPage() {
                 )}
               </>
           )}
+
+              {/* Infinite scroll sentinel is shown above when hasMore */}
             </section>
           </div>
         </div>

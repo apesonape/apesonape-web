@@ -11,6 +11,30 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: '**.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'moccasin-brilliant-silkworm-382.mypinata.cloud',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cloudflare-ipfs.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ipfs.io',
+      },
+      {
+        protocol: 'https',
+        hostname: 'nftstorage.link',
+      },
+      {
+        protocol: 'https',
+        hostname: 'dweb.link',
+      },
+      {
+        protocol: 'https',
         hostname: '**.magiceden.dev',
       },
       {

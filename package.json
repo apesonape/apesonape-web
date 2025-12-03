@@ -7,13 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "generate:manifest": "node scripts/generate-collection-manifest.mjs"
+    "generate:manifest": "node scripts/generate-collection-manifest.mjs",
+    "build:collection-index": "node scripts/build-collection-index.mjs",
+    "build:collection-thumbs": "node scripts/build-collection-thumbs.mjs --tokensPath ./collection-index/tokens.json"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.86.0",
     "axios": "^1.12.2",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.471.0",
+    "sharp": "^0.33.4",
     "next": "15.1.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
