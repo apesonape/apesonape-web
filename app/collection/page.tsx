@@ -74,7 +74,6 @@ export default function CollectionPage() {
   const [activeTraitType, setActiveTraitType] = useState<string>('');
 
   const itemsPerPage = 50;
-  const usePagination = false; // use infinite scroll
 
   // Local search input for token ID
   const [idQuery, setIdQuery] = useState<string>('');
@@ -374,7 +373,7 @@ export default function CollectionPage() {
     })();
 
     return () => { cancelled = true; };
-  }, [displayedItems, applyTraitsToCaches]);
+  }, [displayedItems, applyTraitsToCaches, cdnTokensById]);
 
   // When trait filters are active, progressively fetch traits for all items (so "all values" can show)
   useEffect(() => {
@@ -418,7 +417,7 @@ export default function CollectionPage() {
       await Promise.allSettled(workers);
     })();
     return () => { cancelled = true; };
-  }, [driveItems, selectedByType, showTraitFilters, applyTraitsToCaches]);
+  }, [driveItems, selectedByType, showTraitFilters, applyTraitsToCaches, cdnTraitIndex, cdnTraitsMeta, totalCount]);
 
   // (Removed) Magic Eden prefetch – traits now come from IPFS metadata and a local cache
 
@@ -573,7 +572,7 @@ export default function CollectionPage() {
     }
 
     // Now filter driveItems by the computed matchIds
-    let filtered = driveItems.filter(item => item.tokenId && matchIds.has(item.tokenId));
+    const filtered = driveItems.filter(item => item.tokenId && matchIds.has(item.tokenId));
 
     // Sorting
     filtered.sort((a, b) => {
@@ -599,7 +598,7 @@ export default function CollectionPage() {
     // If filters are active, we still may plan more tokens to discover additional matches
     const canPlanMore = (plannedUntil + 1) < totalCount;
     setHasMore(filtered.length > itemsPerPage || canPlanMore);
-  }, [driveItems, searchTerm, sortBy, selectedByType]);
+  }, [driveItems, searchTerm, sortBy, selectedByType, cdnTraitIndex, plannedUntil, totalCount]);
 
   // Infinite scroll: append more items when sentinel enters view
   useEffect(() => {
