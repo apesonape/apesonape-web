@@ -554,9 +554,11 @@ async function renderBannerFromNFT(
 
   // NFT image frame
   try {
-    const tokenNumeric = parseInt(String(nft.id), 10);
-    const cdnFirst = !isNaN(tokenNumeric) ? [`${THUMBS_BASE}/${tokenNumeric}.webp`] : [];
-    const img = await loadImageWithFallbacks([...cdnFirst, nft.image]);
+    const idStr = String(nft.id);
+    const m = idStr.match(/:(\d+)$/);
+    const tokenNumeric = m ? parseInt(m[1], 10) : (/^\d+$/.test(idStr) ? parseInt(idStr, 10) : NaN);
+    const cdn = !isNaN(tokenNumeric) ? [`${THUMBS_BASE}/${tokenNumeric}.webp`] : [];
+    const img = await loadImageWithFallbacks([nft.image, ...cdn]);
     const frameH = Math.min(480, img.height);
     const targetH = Math.min(BANNER_HEIGHT - 80, frameH);
     const targetW = Math.floor((img.width / img.height) * targetH);
@@ -682,12 +684,153 @@ async function renderBannerFromNFT(
   };
 }
 
+async function renderBannerFromNFTGrid(
+  nfts: MagicEdenNFT[],
+  opts?: { settings?: BannerSettings; rows?: number; cols?: number }
+): Promise<GeneratedItem> {
+  const canvas = document.createElement('canvas');
+  canvas.width = BANNER_WIDTH;
+  canvas.height = BANNER_HEIGHT;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas 2D context unavailable');
+
+  const seedBase = nfts.map((n) => n.id).join('|') || 'grid';
+  const rng = createSeededRandom(hashStringToSeed(seedBase));
+  const settings: BannerSettings = opts?.settings || {
+    style: 'neon',
+    primaryColor: '#00caff',
+    secondaryColor: '#00ffbf',
+    accentColor: '#22d3ee',
+    backgroundColor: '#030712',
+    textColor: '#ffffff',
+    glow: 0.8,
+    stripeDensity: 1,
+    cornerRadius: 18,
+    showBrandCorner: true,
+    showSubtitle: false,
+    showTraits: false,
+    frameBorder: 2,
+    showWebsite: true,
+    websiteText: 'apesonape.io',
+    websiteColor: '#9CA3AF',
+    websiteOpacity: 0.8,
+    websiteSize: 18,
+  };
+
+  drawBackground(ctx, rng, settings);
+
+  // Preload images concurrently (prefer CDN thumbs for speed)
+  const images = await Promise.all(
+    nfts.map(async (nft) => {
+      try {
+        const idStr = String(nft.id);
+        const m = idStr.match(/:(\d+)$/);
+        const tokenNumeric = m ? parseInt(m[1], 10) : (/^\d+$/.test(idStr) ? parseInt(idStr, 10) : NaN);
+        const cdn = !isNaN(tokenNumeric) ? [`${THUMBS_BASE}/${tokenNumeric}.webp`] : [];
+        // Prefer CDN first, then full image
+        return await loadImageWithFallbacks([...cdn, nft.image]);
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  // compute grid dims
+  const count = nfts.length;
+  const cols = Math.max(1, Math.floor(opts?.cols || 0)) || Math.min(5, Math.max(1, Math.ceil(Math.sqrt(count))));
+  const rows = Math.max(1, Math.floor(opts?.rows || 0)) || Math.max(1, Math.ceil(count / cols));
+
+  // Touching columns: zero inner padding, small outer margins
+  const outerMarginX = 8;
+  const outerMarginY = 8;
+  const pad = 0;
+  const areaX = outerMarginX;
+  const areaY = outerMarginY;
+  const areaW = BANNER_WIDTH - outerMarginX * 2;
+  const areaH = BANNER_HEIGHT - outerMarginY * 2 - 56; // leave space for website label
+
+  const cellW = Math.floor((areaW - (cols - 1) * pad) / cols);
+  const cellH = Math.floor((areaH - (rows - 1) * pad) / rows);
+
+  for (let i = 0; i < count; i++) {
+    const r = Math.floor(i / cols);
+    const c = i % cols;
+    const x = areaX + c * (cellW + pad);
+    const y = areaY + r * (cellH + pad);
+
+    try {
+      const img = images[i];
+      if (!img) throw new Error('Image load failed');
+
+      // fit image inside cell with aspect ratio
+      const scale = Math.min(cellW / img.width, cellH / img.height);
+      const w = Math.floor(img.width * scale);
+      const h = Math.floor(img.height * scale);
+      const dx = x + Math.floor((cellW - w) / 2);
+      const dy = y + Math.floor((cellH - h) / 2);
+
+      const radius = Math.max(0, Math.min(16, settings.cornerRadius));
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(dx + radius, dy);
+      ctx.lineTo(dx + w - radius, dy);
+      ctx.quadraticCurveTo(dx + w, dy, dx + w, dy + radius);
+      ctx.lineTo(dx + w, dy + h - radius);
+      ctx.quadraticCurveTo(dx + w, dy + h, dx + w - radius, dy + h);
+      ctx.lineTo(dx + radius, dy + h);
+      ctx.quadraticCurveTo(dx, dy + h, dx, dy + h - radius);
+      ctx.lineTo(dx, dy + radius);
+      ctx.quadraticCurveTo(dx, dy, dx + radius, dy);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(img as unknown as CanvasImageSource, dx, dy, w, h);
+      ctx.restore();
+
+      // Border
+      ctx.strokeStyle = hexToRgba(settings.accentColor, 0.5);
+      ctx.lineWidth = Math.max(1, Math.min(4, settings.frameBorder));
+      ctx.strokeRect(dx + 1, dy + 1, w - 2, h - 2);
+    } catch {
+      ctx.fillStyle = '#fca5a5';
+      ctx.font = 'bold 16px system-ui, Segoe UI, Arial';
+      ctx.fillText('Image failed', x + 8, y + 24);
+    }
+  }
+
+  if (settings.showWebsite && settings.websiteText) {
+    const label = settings.websiteText;
+    ctx.font = `600 18px system-ui, Segoe UI, Arial`;
+    const tw = ctx.measureText(label).width;
+    const padding = 8;
+    const bx = BANNER_WIDTH - tw - padding * 2 - 16;
+    const by = BANNER_HEIGHT - 24;
+    ctx.fillStyle = hexToRgba('#000000', 0.4);
+    drawRoundedRect(ctx, bx, by - 16, tw + padding * 2, 26, 8);
+    ctx.fill();
+    ctx.fillStyle = settings.websiteColor;
+    ctx.fillText(label, bx + padding, by);
+  }
+
+  const dataUrl = canvas.toDataURL('image/png');
+  return {
+    id: `nft-grid-${nfts.length}`,
+    title: `AoA Banner (${nfts.length} NFTs)`,
+    dataUrl,
+    width: BANNER_WIDTH,
+    height: BANNER_HEIGHT,
+    meta: { count: nfts.length },
+  };
+}
 
 export default function BannersPage() {
   const [nftId, setNftId] = useState('');
   const [loading, setLoading] = useState<'nft' | null>(null);
   const [preview, setPreview] = useState<GeneratedItem | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [multiMode, setMultiMode] = useState(false);
+  const [gridRows, setGridRows] = useState(1);
+  const [gridCols, setGridCols] = useState(3);
+  const [gridTokenIds, setGridTokenIds] = useState<string[]>([]);
   const [settings, setSettings] = useState<BannerSettings>({
     style: 'neon',
     primaryColor: '#00caff',
@@ -747,6 +890,36 @@ export default function BannersPage() {
       return String(next);
     });
   }, []);
+
+  const ensureGridSize = useCallback((rows: number, cols: number) => {
+    const total = Math.max(1, rows) * Math.max(1, cols);
+    setGridTokenIds((prev) => {
+      const next = prev.slice(0, total);
+      while (next.length < total) next.push('');
+      return next;
+    });
+  }, []);
+
+  const handleGenerateGrid = useCallback(async () => {
+    const total = Math.max(1, gridRows) * Math.max(1, gridCols);
+    ensureGridSize(gridRows, gridCols);
+    const ids = (gridTokenIds.slice(0, total)).map((s) => s.trim()).filter((s) => /^\d+$/.test(s));
+    if (ids.length === 0) { setError('Please enter at least one valid token ID.'); return; }
+    setLoading('nft');
+    setError(null);
+    try {
+      const nfts: MagicEdenNFT[] = [];
+      for (const id of ids) {
+        const nft = await magicEdenAPI.getNFTByTokenId(id);
+        if (nft) nfts.push(nft);
+      }
+      if (nfts.length === 0) { setError('No valid tokens resolved for this collection.'); return; }
+      const gen = await renderBannerFromNFTGrid(nfts, { settings, rows: gridRows, cols: gridCols });
+      setPreview(gen);
+    } finally {
+      setLoading(null);
+    }
+  }, [gridRows, gridCols, gridTokenIds, settings, ensureGridSize]);
 
   return (
     <div className="min-h-screen relative">
@@ -951,6 +1124,7 @@ export default function BannersPage() {
             <div className="glass-dark rounded-xl p-4 mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="font-semibold text-neon-cyan flex items-center gap-2"><Wand2 className="w-4 h-4"/> Select Token</div>
+                {!multiMode && (
                 <div className="flex items-center gap-2 flex-1 sm:ml-2">
                   <button onClick={() => stepToken(-1)} className="px-3 py-2 rounded-lg border border-white/10 hover:bg-white/5" aria-label="Previous token"><Minus className="w-4 h-4"/></button>
                   <input
@@ -966,14 +1140,107 @@ export default function BannersPage() {
                   />
                   <button onClick={() => stepToken(1)} className="px-3 py-2 rounded-lg border border-white/10 hover:bg-white/5" aria-label="Next token"><Plus className="w-4 h-4"/></button>
                 </div>
+                )}
                 <button
-                  onClick={handleGenerateFromNFT}
-                  disabled={loading === 'nft' || !nftId.trim()}
+                  onClick={multiMode ? handleGenerateGrid : handleGenerateFromNFT}
+                  disabled={loading === 'nft' || (!multiMode && !nftId.trim())}
                   className="w-full sm:w-auto px-4 py-2 rounded-lg bg-neon-cyan/20 border border-neon-cyan/40 hover:bg-neon-cyan/30 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   {loading === 'nft' ? <Loader2 className="w-4 h-4 animate-spin"/> : <ImagePlus className="w-4 h-4"/>}
-                  Generate
+                  {multiMode ? 'Generate Grid' : 'Generate'}
                 </button>
+              </div>
+
+              {/* Multi-ape grid controls */}
+              <div className="mt-4 border-t border-white/10 pt-4">
+                <label className="flex items-center gap-2 text-sm text-off-white/80">
+                  <input
+                    type="checkbox"
+                    checked={multiMode}
+                    onChange={(e) => {
+                      setMultiMode(e.target.checked);
+                      if (e.target.checked) ensureGridSize(gridRows, gridCols);
+                    }}
+                    className="accent-neon-cyan"
+                  />
+                  Enable multi-ape grid
+                </label>
+                {multiMode && (
+                  <div className="mt-3 space-y-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <label className="text-xs text-off-white/70">Preset
+                        <select
+                          className="ml-2 theme-select px-2 py-1.5 text-sm"
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const presets: Record<string, [number, number]> = {
+                              free: [gridRows, gridCols],
+                              h1x3: [1, 3],
+                              h1x5: [1, 5],
+                              h2x4: [2, 4],
+                              h2x6: [2, 6],
+                              s2x2: [2, 2],
+                              s3x3: [3, 3],
+                            };
+                            const [r, c] = presets[val] || [gridRows, gridCols];
+                            setGridRows(r); setGridCols(c); ensureGridSize(r, c);
+                          }}
+                          defaultValue="free"
+                        >
+                          <option value="free">Free</option>
+                          <option value="h1x3">Horizontal 1x3</option>
+                          <option value="h1x5">Horizontal 1x5</option>
+                          <option value="h2x4">Horizontal 2x4</option>
+                          <option value="h2x6">Horizontal 2x6</option>
+                          <option value="s2x2">Square 2x2</option>
+                          <option value="s3x3">Square 3x3</option>
+                        </select>
+                      </label>
+                      <label className="text-xs text-off-white/70">Rows
+                        <input
+                          type="number"
+                          min={1}
+                          max={5}
+                          value={gridRows}
+                          onChange={(e) => { const v = Math.min(5, Math.max(1, parseInt(e.target.value || '1'))); setGridRows(v); ensureGridSize(v, gridCols); }}
+                          className="ml-2 w-20 bg-transparent border border-white/10 rounded px-2 py-1"
+                        />
+                      </label>
+                      <label className="text-xs text-off-white/70">Cols
+                        <input
+                          type="number"
+                          min={1}
+                          max={6}
+                          value={gridCols}
+                          onChange={(e) => { const v = Math.min(6, Math.max(1, parseInt(e.target.value || '1'))); setGridCols(v); ensureGridSize(gridRows, v); }}
+                          className="ml-2 w-20 bg-transparent border border-white/10 rounded px-2 py-1"
+                        />
+                      </label>
+                      <div className="text-xs text-off-white/60">Slots: {Math.max(1, gridRows) * Math.max(1, gridCols)}</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {gridTokenIds.map((val, idx) => (
+                        <input
+                          key={idx}
+                          value={val}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/[^0-9]/g, '');
+                            setGridTokenIds((prev) => {
+                              const next = prev.slice();
+                              next[idx] = v;
+                              return next;
+                            });
+                          }}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder={`Token ${idx + 1}`}
+                          className="bg-transparent border border-white/10 rounded px-2 py-1 text-sm"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="glass-dark rounded-xl p-5">

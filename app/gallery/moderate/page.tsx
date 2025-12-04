@@ -29,6 +29,15 @@ export default function GalleryModeratePage() {
 	useEffect(() => {
 		let cancelled = false;
 		const load = async () => {
+			// Require admin token before attempting to load pending items
+			if (!token) {
+				if (!cancelled) {
+					setLoading(false);
+					setItems([]);
+					setError(null);
+				}
+				return;
+			}
 			try {
 				setLoading(true);
 				setError(null);
