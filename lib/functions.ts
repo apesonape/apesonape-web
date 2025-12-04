@@ -1,5 +1,11 @@
+import { PUBLIC_SUPABASE_URL } from './supabase-env';
+
 export function getSupabaseFunctionsBase(): string {
-	const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || require('./supabase-env').PUBLIC_SUPABASE_URL || '';
+	// Allow explicit override if provided
+	const explicit = process.env.NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL || '';
+	if (explicit) return explicit;
+
+	const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || PUBLIC_SUPABASE_URL || '';
 	try {
 		const u = new URL(supabaseUrl);
 		// example host: bqcrbcpmimfojnjdhvrz.supabase.co -> bqcrbcpmimfojnjdhvrz.functions.supabase.co
