@@ -240,10 +240,36 @@ class MagicEdenAPI {
     const tokenUri = this.decodeAbiString(res.result);
     if (!tokenUri) return null;
 
-    // Normalize IPFS gateway
-    const normalizedUri = this.normalizeIpfsUrl(tokenUri);
+    // Normalize IPFS gateway and build candidate metadata URLs
+    const normalizedBase = this.normalizeIpfsUrl(tokenUri);
+    const tokenIdDec = String(tokenId);
 
-    // Fetch metadata JSON
+    const candidates: string[] = [];
+    // Replace common placeholders in base URIs
+    const replacedPlaceholders = normalizedBase
+      .replace('{id}', tokenIdDec)
+      .replace('{tokenId}', tokenIdDec)
+      .replace('{token_id}', tokenIdDec);
+    if (replacedPlaceholders !== normalizedBase) {
+      candidates.push(replacedPlaceholders);
+    }
+
+    // If URI likely points to a directory or base (no extension), try appending token paths
+    const urlPath = (() => {
+      try { return new URL(normalizedBase).pathname; } catch { return normalizedBase; }
+    })();
+    const lastSegment = urlPath.split('/').pop() || '';
+    const hasExt = lastSegment.includes('.') && !lastSegment.endsWith('.');
+
+    candidates.push(normalizedBase);
+    if (!hasExt) {
+      // Try with "/{id}.json" and "/{id}"
+      const sep = normalizedBase.endsWith('/') ? '' : '/';
+      candidates.push(`${normalizedBase}${sep}${tokenIdDec}.json`);
+      candidates.push(`${normalizedBase}${sep}${tokenIdDec}`);
+    }
+
+    // Fetch metadata JSON from candidates in order
     type Metadata = {
       name?: string;
       image?: string;
@@ -252,10 +278,12 @@ class MagicEdenAPI {
       attributes?: Array<{ trait_type?: string; name?: string; value: string; rarity?: number }>;
     };
     let metadata: Metadata | null = null;
-    try {
-      const metaResp = await fetch(normalizedUri, { headers: { accept: 'application/json' } });
-      if (metaResp.ok) metadata = await metaResp.json();
-    } catch {}
+    for (const candidate of candidates) {
+      try {
+        const metaResp = await fetch(candidate, { headers: { accept: 'application/json' } });
+        if (metaResp.ok) { metadata = await metaResp.json(); break; }
+      } catch {}
+    }
     if (!metadata) return null;
 
     const image = this.normalizeIpfsUrl(metadata.image || metadata.image_url || metadata.imageUrl || '');
