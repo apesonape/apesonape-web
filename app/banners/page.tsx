@@ -753,7 +753,6 @@ async function renderBannerFromNFTGrid(
   const cellH = Math.floor((areaH - (rows - 1) * pad) / rows);
 
   for (let i = 0; i < count; i++) {
-    const nft = nfts[i];
     const r = Math.floor(i / cols);
     const c = i % cols;
     const x = areaX + c * (cellW + pad);
