@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase';
 import { getSupabaseFunctionsBase } from '@/lib/functions';
+import { PUBLIC_SUPABASE_ANON_KEY } from '@/lib/supabase-env';
 
 export async function GET(req: NextRequest) {
 	try {
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
 		// If admin header present, proxy to functions for pending/secure views
 		if (adminHeader) {
 			const base = getSupabaseFunctionsBase();
-			const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+			const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || PUBLIC_SUPABASE_ANON_KEY || '';
 			if (!base || !anonKey) return NextResponse.json({ error: 'Supabase config missing' }, { status: 500 });
 			const qs = new URLSearchParams();
 			if (status) qs.set('status', status);
