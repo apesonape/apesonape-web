@@ -977,17 +977,7 @@ export default function CollectionPage() {
 
             {/* Right: Grid */}
             <section className="lg:col-span-4">
-          <motion.div 
-                className="mb-0 text-center lg:text-left"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-          >
-            <p style={{ color: 'var(--ape-gray)' }}>
-                  Showing <span className="text-hero-blue font-semibold">{displayedItems.length}</span> of{' '}
-                  <span className="text-hero-blue font-semibold">{totalCount || filteredItems.length}</span> images
-            </p>
-          </motion.div>
+          
 
               {loading ? (
               <div className="flex items-center justify-center py-20">

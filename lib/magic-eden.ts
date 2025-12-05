@@ -40,16 +40,18 @@ type RawAttributes = Array<{ trait_type?: string; name?: string; value?: string;
 
 class MagicEdenAPI {
   private baseUrl = 'https://api-mainnet.magiceden.dev/v2';
-  private collectionSymbol = 'apes-on-ape'; // Replace with actual collection symbol
+  private collectionSymbol = 'apes-on-apechain'; // Collection page: https://magiceden.io/collections/apechain/apes-on-apechain
 
   private getEvmContractAddress(): string | null {
     const addr = (process.env.NEXT_PUBLIC_ME_COLLECTION || '').trim();
-    return addr ? addr : null;
+    // Fallback to known Apes On Apechain contract if env not provided
+    return addr ? addr : '0xa6bAbE18F2318D2880DD7dA3126C19536048F8B0';
   }
 
   private getApechainRpcUrl(): string | null {
     const rpc = (process.env.NEXT_PUBLIC_APECHAIN_RPC || '').trim();
-    return rpc || null;
+    // Fallback to public Apechain RPC if env not provided
+    return rpc || 'https://rpc.apechain.com/http';
   }
 
   async getCollectionInfo(): Promise<MagicEdenCollection> {
