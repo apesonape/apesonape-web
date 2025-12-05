@@ -1,298 +1,237 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Nav from '../../components/Nav';
 import Footer from '../../components/Footer';
-import { Plus, Trash2, Download, Layers, Shirt, Upload, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { Download, Shirt, Upload } from 'lucide-react';
+import { magicEdenAPI } from '@/lib/magic-eden';
 
-type Layer = {
+type ClothingItem = {
   id: string;
-  src: string;
-  x: number;
-  y: number;
-  scale: number;
-  z: number;
-  naturalWidth: number;
-  naturalHeight: number;
-  locked?: boolean;
+  name: string;
+  src: string; // 4096x4096 transparent PNG aligned to base
+  category: 'Hats' | 'Tops' | 'Accessories';
 };
 
+const CLOTHES: ClothingItem[] = [
+  // Hats
+  { id: 'santa-hat', name: 'Santa Hat', src: '/wardrobe/santa-hat.png', category: 'Hats' },
+  // Accessories
+  { id: 'gm-arm', name: 'GM Arm + Mug', src: '/file.svg', category: 'Accessories' },
+  // Tops (reflect current files in public/wardrobe/tops)
+  { id: 'bandolier', name: 'Bandolier', src: '/wardrobe/tops/bandolier.png', category: 'Tops' },
+  { id: 'bone-necklace', name: 'Bone Necklace', src: '/wardrobe/tops/bone-necklace.png', category: 'Tops' },
+];
+
+const CATEGORIES: Array<ClothingItem['category']> = ['Hats', 'Tops', 'Accessories'];
+
+const OUTPUT_SIZE = 4096;
+
 export default function WardrobePage() {
+  const [tokenId, setTokenId] = useState<string>('');
+  const [loadingNft, setLoadingNft] = useState(false);
   const [baseSrc, setBaseSrc] = useState<string>('');
-  const [layers, setLayers] = useState<Layer[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const dragRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null);
-  const stageRef = useRef<HTMLDivElement | null>(null);
-  const [stageSize, setStageSize] = useState<{ w: number; h: number }>({ w: 512, h: 512 });
-  const [displayScale, setDisplayScale] = useState<number>(1);
+  const [activeCategory, setActiveCategory] = useState<ClothingItem['category']>('Hats');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [note, setNote] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [flashOn, setFlashOn] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [includeGmArm, setIncludeGmArm] = useState<boolean>(true);
+  const FUR_COLORS = [
+    'Black','Blue','Brown','Cheetah','Cream','Dark Brown','Death Bot','Dmt','Golden Brown','Gray','Noise','Pink','Red','Robot','Solid Gold','Tan','Trippy','White','Zombie'
+  ] as const;
+  type FurColor = typeof FUR_COLORS[number];
+  const [furColor, setFurColor] = useState<FurColor>('Brown');
 
-  // Helpers to add holiday sticker overlays (SVG -> data URL)
-  function svgToDataUrl(svg: string) {
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-  }
-
-  function loadImageSize(url: string): Promise<{ w: number; h: number }> {
-    return new Promise((resolve) => {
-      const img = new window.Image();
-      img.onload = () => resolve({ w: img.naturalWidth || img.width, h: img.naturalHeight || img.height });
-      img.onerror = () => resolve({ w: 0, h: 0 });
-      img.src = url;
+  const toggleSelect = useCallback((id: string) => {
+    if (id === 'gm-arm') {
+      setIncludeGmArm((prev) => !prev);
+      return;
+    }
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
-  }
+  }, []);
 
-  async function addLayerFromSvg(svg: string, x: number, y: number, scale: number) {
-    const url = svgToDataUrl(svg);
-    const { w, h } = await loadImageSize(url);
-    const id = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const maxZ = layers.reduce((m, l) => Math.max(m, l.z), 0);
-    setLayers((prev) => [
-      ...prev,
-      { id, src: url, x, y, scale, z: maxZ + 1, naturalWidth: w, naturalHeight: h, locked: false },
-    ]);
-    setActiveId(id);
-  }
-
-  // removed unused addLayerFromImage
-
-  function makeLightsFrameSVG(size = 1024) {
-    const s = size;
-    return `
-<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">
-  <defs>
-    <filter id="glow"><feGaussianBlur stdDeviation="2" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-  </defs>
-  <rect x="6" y="6" width="${s-12}" height="${s-12}" rx="24" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="6"/>
-  ${[...Array(24)].map((_,i)=>{
-      const p = i/24;
-      const x = 12 + (s-24)*p;
-      const yTop = 12 + 8*Math.sin(p*6.283);
-      const colors = ['#E53935','#FFD700','#00C853','#0054F9'];
-      const c = colors[i%4];
-      return `<circle cx="${x}" cy="${yTop}" r="8" fill="${c}" filter="url(#glow)"/>`;
-    }).join('')}
-  ${[...Array(24)].map((_,i)=>{
-      const p = i/24;
-      const x = 12 + (s-24)*p;
-      const yBot = (s - 12) - 8*Math.sin(p*6.283);
-      const colors = ['#E53935','#FFD700','#00C853','#0054F9'];
-      const c = colors[(i+2)%4];
-      return `<circle cx="${x}" cy="${yBot}" r="8" fill="${c}" filter="url(#glow)"/>`;
-    }).join('')}
-  ${[...Array(20)].map((_,i)=>{
-      const p = i/20;
-      const y = 12 + (s-24)*p;
-      const xLeft = 12 + 6*Math.sin(p*6.283);
-      const colors = ['#E53935','#FFD700','#00C853','#0054F9'];
-      const c = colors[(i+1)%4];
-      return `<circle cx="${xLeft}" cy="${y}" r="8" fill="${c}" filter="url(#glow)"/>`;
-    }).join('')}
-  ${[...Array(20)].map((_,i)=>{
-      const p = i/20;
-      const y = 12 + (s-24)*p;
-      const xRight = (s - 12) - 6*Math.sin(p*6.283);
-      const colors = ['#E53935','#FFD700','#00C853','#0054F9'];
-      const c = colors[(i+3)%4];
-      return `<circle cx="${xRight}" cy="${y}" r="8" fill="${c}" filter="url(#glow)"/>`;
-    }).join('')}
-</svg>`;
-  }
-
-  function makeGiftsGroupSVG() {
-    return `
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
-  <rect x="20" y="120" width="160" height="110" rx="14" fill="#E53935"/>
-  <rect x="90" y="120" width="20" height="110" fill="#FFD700"/>
-  <rect x="30" y="90" width="140" height="40" rx="10" fill="#C62828"/>
-  <rect x="98" y="90" width="4" height="40" fill="#FFD700"/>
-  <path d="M100 90c-10 20-30 30-50 30 20 0 40 10 50 30 10-20 30-30 50-30-20 0-40-10-50-30z" fill="#FFD700"/>
-
-  <rect x="220" y="140" width="120" height="90" rx="12" fill="#1DB954"/>
-  <rect x="270" y="140" width="20" height="90" fill="#0054F9"/>
-  <rect x="230" y="120" width="100" height="30" rx="8" fill="#128D45"/>
-  <rect x="278" y="120" width="4" height="30" fill="#0054F9"/>
-  <path d="M280 120c-8 16-24 24-40 24 16 0 32 8 40 24 8-16 24-24 40-24-16 0-32-8-40-24z" fill="#0054F9"/>
-</svg>`;
-  }
-
-  function makeSnowflakesSVG(size = 1024) {
-    const s = size;
-    return `
-<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">
-  ${[...Array(40)].map(()=>{
-      const x = Math.random()*s;
-      const y = Math.random()*s;
-      const r = 1.5 + Math.random()*2.5;
-      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="rgba(255,255,255,0.8)"/>`;
-    }).join('')}
-</svg>`;
-  }
-
-  useEffect(() => {
-    function onMove(e: PointerEvent) {
-      if (!dragRef.current) return;
-      const { id, offsetX, offsetY } = dragRef.current;
-      const stage = stageRef.current;
-      if (!stage) return;
-      const rect = stage.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / displayScale - offsetX;
-      const y = (e.clientY - rect.top) / displayScale - offsetY;
-      setLayers((prev) =>
-        prev.map((l) => (l.id === id ? { ...l, x, y } : l))
-      );
-    }
-    function onUp() {
-      dragRef.current = null;
-    }
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-    };
-  }, [displayScale]);
-
-  // Recalculate display scale on mount/resize or when stage size changes
-  useEffect(() => {
-    function recalc() {
-      const stage = stageRef.current;
-      if (!stage) return;
-      const rect = stage.getBoundingClientRect();
-      if (stageSize.w > 0) {
-        setDisplayScale(rect.width / stageSize.w);
-      }
-    }
-    recalc();
-    window.addEventListener('resize', recalc);
-    return () => window.removeEventListener('resize', recalc);
-  }, [stageSize.w]);
-
-  function handlePickBase(e: React.ChangeEvent<HTMLInputElement>) {
+  const handlePickBase = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
     setBaseSrc(url);
-    // Read image size using helper to avoid global Image name collision
-    loadImageSize(url).then(({ w, h }) => {
-      const width = w || 512;
-      const height = h || 512;
-      setStageSize({ w: width, h: height });
-      setTimeout(() => {
-        const stage = stageRef.current;
-        if (!stage) return;
-        const rect = stage.getBoundingClientRect();
-        if (width > 0) setDisplayScale(rect.width / width);
-      }, 0);
-    });
-  }
-
-  function handleAddLayer(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    (async () => {
-      const { w, h } = await loadImageSize(url);
-      const id = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      const maxZ = layers.reduce((m, l) => Math.max(m, l.z), 0);
-      setLayers((prev) => [
-        ...prev,
-        { id, src: url, x: stageSize.w * 0.25, y: stageSize.h * 0.25, scale: 1, z: maxZ + 1, naturalWidth: w, naturalHeight: h },
-      ]);
-      setActiveId(id);
-    })();
-  }
-
-  function beginDrag(id: string, e: React.PointerEvent<HTMLDivElement>) {
-    const target = e.currentTarget;
-    const rect = target.getBoundingClientRect();
-    dragRef.current = {
-      id,
-      offsetX: (e.clientX - rect.left) / displayScale,
-      offsetY: (e.clientY - rect.top) / displayScale,
+    setNote(null);
+    setPreviewUrl(null);
+    // Best-effort hint if not 4096x4096
+    const img = new window.Image();
+    img.onload = () => {
+      if ((img.naturalWidth !== OUTPUT_SIZE) || (img.naturalHeight !== OUTPUT_SIZE)) {
+        setNote('Tip: For best results, use a 4096×4096 image.');
+      }
     };
-    setActiveId(id);
-  }
+    img.src = url;
+  }, []);
 
-  function adjustScale(id: string, delta: number) {
-    setLayers((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, scale: Math.max(0.2, Math.min(4, l.scale + delta)) } : l))
-    );
-  }
+  const handleLoadById = useCallback(async () => {
+    if (!tokenId.trim() || loadingNft) return;
+    setLoadingNft(true);
+    setNote(null);
+    try {
+      if (!/^\d+$/.test(tokenId.trim())) {
+        setNote('Please enter a numeric token ID (e.g., 1234).');
+        return;
+      }
+      const nft = await magicEdenAPI.getNFTByTokenId(tokenId.trim());
+      if (!nft) {
+        setNote('Token not found. Check the ID and try again.');
+        return;
+      }
+      setBaseSrc(nft.image);
+      setPreviewUrl(null);
+      const furTrait = nft.traits.find((t) => t.name.toLowerCase() === 'fur');
+      if (furTrait && FUR_COLORS.includes(furTrait.value as FurColor)) {
+        setFurColor(furTrait.value as FurColor);
+      }
+    } catch (err) {
+      console.error('Load NFT error:', err);
+      setNote('Failed to load NFT. Try again.');
+    } finally {
+      setLoadingNft(false);
+    }
+  }, [tokenId, loadingNft]);
 
-  function bringToFront(id: string) {
-    const maxZ = layers.reduce((m, l) => Math.max(m, l.z), 0);
-    setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, z: maxZ + 1 } : l)));
-  }
+  // Attempt to prime audio on first interaction to avoid autoplay restrictions
+  useEffect(() => {
+    function prime() {
+      if (!audioRef.current) return;
+      audioRef.current.muted = true;
+      audioRef.current.play().catch(() => {});
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.muted = false;
+      window.removeEventListener('pointerdown', prime);
+      window.removeEventListener('keydown', prime);
+    }
+    window.addEventListener('pointerdown', prime);
+    window.addEventListener('keydown', prime);
+    return () => {
+      window.removeEventListener('pointerdown', prime);
+      window.removeEventListener('keydown', prime);
+    };
+  }, []);
 
-  function removeLayer(id: string) {
-    setLayers((prev) => prev.filter((l) => l.id !== id));
-    if (activeId === id) setActiveId(null);
-  }
+  // Build GM arm asset path (PNG overlays to be added later by fur color)
+  const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const getGmArmPath = (fur: FurColor) => `/wardrobe/gm-arm/${slugify(fur)}.png`;
+  const [gmArmPreviewOk, setGmArmPreviewOk] = useState(false);
+  useEffect(() => {
+    if (!includeGmArm) { setGmArmPreviewOk(false); return; }
+    const url = getGmArmPath(furColor);
+    const img = new window.Image();
+    img.onload = () => setGmArmPreviewOk(true);
+    img.onerror = () => setGmArmPreviewOk(false);
+    img.src = url;
+  }, [includeGmArm, furColor]);
 
-  async function handleDownload() {
-    if (!baseSrc && layers.length === 0) return;
+  const compose = useCallback(async (): Promise<string | null> => {
+    if (!baseSrc) return null;
     const canvas = document.createElement('canvas');
-    canvas.width = stageSize.w;
-    canvas.height = stageSize.h;
+    canvas.width = OUTPUT_SIZE;
+    canvas.height = OUTPUT_SIZE;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) return null;
 
-    function load(url: string) {
-      return new Promise<HTMLImageElement>((resolve, reject) => {
+    const load = (url: string) =>
+      new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new window.Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => resolve(img);
         img.onerror = reject;
         img.src = url;
       });
-    }
 
-    if (baseSrc) {
-      const baseImg = await load(baseSrc);
-      const bw = (baseImg.naturalWidth || baseImg.width);
-      const bh = (baseImg.naturalHeight || baseImg.height);
-      // Draw base scaled to the exact stage size to match preview
-      ctx.drawImage(baseImg, 0, 0, bw, bh, 0, 0, stageSize.w, stageSize.h);
-    } else {
-      // Background fill just in case
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, stageSize.w, stageSize.h);
-    }
+    const base = await load(baseSrc);
+    ctx.drawImage(base, 0, 0, base.naturalWidth || base.width, base.naturalHeight || base.height, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
-    const ordered = [...layers].sort((a, b) => a.z - b.z);
-    for (const l of ordered) {
-      // Prefer stored natural sizes to avoid re-measuring at export time
-      const nw = l.naturalWidth, nh = l.naturalHeight;
-      let w = nw * l.scale;
-      let h = nh * l.scale;
-      // Fallback if sizes were not stored
-      let img: HTMLImageElement | null = null;
-      if (!nw || !nh) {
-        img = await load(l.src);
-        const rawW = (img.naturalWidth || img.width);
-        const rawH = (img.naturalHeight || img.height);
-        w = rawW * l.scale;
-        h = rawH * l.scale;
-      }
-      // Draw using stage coordinates (x,y) so it matches preview mapping
-      if (img) {
-        ctx.drawImage(img, 0, 0, (img.naturalWidth || img.width), (img.naturalHeight || img.height), l.x, l.y, w, h);
-      } else {
-        const tmp = await load(l.src);
-        ctx.drawImage(tmp, 0, 0, (tmp.naturalWidth || tmp.width), (tmp.naturalHeight || tmp.height), l.x, l.y, w, h);
+    const selected = CLOTHES.filter((c) => selectedIds.has(c.id));
+    for (const item of selected) {
+      if (item.id === 'gm-arm') continue;
+      const overlay = await load(item.src);
+      ctx.drawImage(overlay, 0, 0, overlay.naturalWidth || overlay.width, overlay.naturalHeight || overlay.height, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+    }
+    if (includeGmArm) {
+      try {
+        const gm = await load(getGmArmPath(furColor));
+        ctx.drawImage(gm, 0, 0, gm.naturalWidth || gm.width, gm.naturalHeight || gm.height, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+      } catch {
+        // If asset not present yet, skip gracefully
       }
     }
+    return canvas.toDataURL('image/png');
+  }, [baseSrc, selectedIds, includeGmArm, furColor]);
 
-    const url = canvas.toDataURL('image/png');
+  const handleGeneratePreview = useCallback(async () => {
+    if (!baseSrc || isGenerating) return;
+    setIsGenerating(true);
+    setFlashOn(false);
+    try {
+      if (audioRef.current) {
+        try {
+          audioRef.current.currentTime = 0;
+          await audioRef.current.play();
+        } catch {}
+      }
+      // Compose while "mechanic" runs
+      const url = await compose();
+      // small delay to let the sound breathe
+      await new Promise((r) => setTimeout(r, 350));
+      setPreviewUrl(url);
+      setFlashOn(true);
+      setTimeout(() => setFlashOn(false), 300);
+    } finally {
+      setIsGenerating(false);
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        } catch {}
+      }
+    }
+  }, [baseSrc, compose, isGenerating]);
+
+  const handleDownload = useCallback(async () => {
+    if (!baseSrc) return;
+    const url = previewUrl || (await compose());
+    if (!url) return;
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'aoa-wardrobe.png';
+    a.download = 'ape-wardrobe.png';
     a.click();
-  }
+  }, [baseSrc, previewUrl, compose]);
+
+  const filtered = CLOTHES.filter((c) => c.category === activeCategory);
 
   return (
     <div className="min-h-screen relative">
+      {/* Lab ambient background */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            'radial-gradient(1200px 600px at 20% 10%, rgba(0,255,200,0.08), transparent 60%), radial-gradient(1000px 500px at 80% 20%, rgba(0,200,255,0.06), transparent 60%), linear-gradient(180deg, #02060B 0%, #070B12 50%, #0B0F17 100%)'
+        }}
+      />
+      {/* Subtle moving smoke layers */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -inset-x-1/4 top-0 h-1/2 opacity-30 blur-2xl" style={{ animation: 'smokeDrift 22s linear infinite' , background: 'radial-gradient(60% 60% at 50% 50%, rgba(180,200,210,0.12), transparent 70%)' }} />
+        <div className="absolute -inset-x-1/4 bottom-0 h-1/2 opacity-25 blur-2xl" style={{ animation: 'smokeDrift 28s linear infinite reverse' , background: 'radial-gradient(60% 60% at 50% 50%, rgba(200,220,230,0.10), transparent 70%)' }} />
+      </div>
       <Nav />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12">
         <motion.div
@@ -303,190 +242,194 @@ export default function WardrobePage() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-hero-blue/10 border border-hero-blue/30 mb-3">
             <Shirt className="w-4 h-4 text-hero-blue" />
-            <span className="text-xs text-hero-blue">Wardrobe (Beta)</span>
+            <span className="text-xs text-hero-blue">Wardrobe</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold" style={{ color: 'var(--foreground)' }}>
-            Customize your Ape
+            Mad Lab Wardrobe
           </h1>
           <p className="text-off-white/80 mt-2 max-w-2xl">
-            Upload your Ape image and overlay clothing layers (transparent PNGs). Drag to position, scale with controls, then download.
+            Step into the scientist’s workshop. Upload a 4096×4096 Ape, select overlays, then generate with a flash of chaotic genius.
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Controls */}
           <div className="glass-dark rounded-xl p-4 border border-white/10 space-y-4">
             <div>
-              <label className="block text-sm mb-2" style={{ color: 'var(--foreground)' }}>Ape image</label>
+              <label className="block text-sm mb-2" style={{ color: 'var(--foreground)' }}>Ape Token ID</label>
+              <div className="flex gap-2">
+                <input
+                  value={tokenId}
+                  onChange={(e) => setTokenId(e.target.value)}
+                  placeholder="e.g. 1234"
+                  className="flex-1 rounded-md bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:ring-2 ring-hero-blue/40"
+                />
+                <button className="btn-secondary whitespace-nowrap" onClick={handleLoadById} disabled={!tokenId.trim() || loadingNft}>
+                  {loadingNft ? 'Loading…' : 'Load NFT'}
+                </button>
+              </div>
+              <div className="text-xs text-off-white/60 mt-2">Loads image and traits from IPFS via tokenURI.</div>
+              {note && <div className="text-xs text-red-400 mt-2">{note}</div>}
+            </div>
+
+            {/* Upload alternative */}
+            <div className="border-t border-white/10 pt-3">
+              <label className="block text-sm mb-2" style={{ color: 'var(--foreground)' }}>Or upload 4096×4096 image</label>
               <label className="btn-secondary inline-flex items-center gap-2 cursor-pointer">
                 <Upload className="w-4 h-4" />
                 <span>Upload Ape</span>
                 <input type="file" accept="image/*" className="hidden" onChange={handlePickBase} />
               </label>
-            </div>
-            <div>
-              <label className="block text-sm mb-2" style={{ color: 'var(--foreground)' }}>Add clothing layer</label>
-              <label className="btn-secondary inline-flex items-center gap-2 cursor-pointer">
-                <Plus className="w-4 h-4" />
-                <span>Add layer</span>
-                <input type="file" accept="image/*" className="hidden" onChange={handleAddLayer} />
-              </label>
+              <div className="text-xs text-off-white/60 mt-2">Recommended: 4096×4096 PNG with transparency.</div>
+              {note && <div className="text-xs text-off-white/60 mt-2">{note}</div>}
             </div>
 
-            {/* Holiday Sticker Library */}
-            <div className="border-t border-white/10 pt-3">
-              <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
-                <span>Holiday Stickers</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  className="px-3 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors text-sm"
-                  onClick={() => {
-                    const svg = makeLightsFrameSVG();
-                    const scale = stageSize.w / 1024;
-                    addLayerFromSvg(svg, 0, 0, scale);
-                  }}
-                  title="Add string lights frame"
-                >
-                  ✨ String Lights
-                </button>
-                <button
-                  className="px-3 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors text-sm"
-                  onClick={() => {
-                    const svg = makeGiftsGroupSVG();
-                    const baseScale = stageSize.w / 1024;
-                    const scale = baseScale * 1.0;
-                    const x = 16;
-                    const y = stageSize.h - 220;
-                    addLayerFromSvg(svg, x, y, scale);
-                  }}
-                  title="Add gifts (left)"
-                >
-                  🎁 Gifts Left
-                </button>
-                <button
-                  className="px-3 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors text-sm"
-                  onClick={() => {
-                    const svg = makeGiftsGroupSVG();
-                    const baseScale = stageSize.w / 1024;
-                    const scale = baseScale * 1.0;
-                    const x = Math.max(0, stageSize.w - 512*scale - 16);
-                    const y = stageSize.h - 220;
-                    addLayerFromSvg(svg, x, y, scale);
-                  }}
-                  title="Add gifts (right)"
-                >
-                  🎁 Gifts Right
-                </button>
-                {/* Santa hat option removed per request */}
-                <button
-                  className="px-3 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors text-sm col-span-2"
-                  onClick={() => {
-                    const svg = makeSnowflakesSVG();
-                    const scale = stageSize.w / 1024;
-                    addLayerFromSvg(svg, 0, 0, scale);
-                  }}
-                  title="Add snowflakes overlay"
-                >
-                  ❄️ Snowflakes Overlay
-                </button>
-              </div>
-            </div>
+            {/* GM Arm configuration removed; use Accessories tile to toggle */}
 
             <div className="border-t border-white/10 pt-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-white/5 border border-white/10 text-xs">
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Layers</span>
-                </div>
-                <button
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors text-sm"
-                  onClick={() => { setLayers([]); setActiveId(null); }}
-                >
-                  <RotateCcw className="w-4 h-4" /> Reset
-                </button>
-              </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {layers.length === 0 && (
-                  <div className="text-sm text-off-white/60">No layers yet.</div>
-                )}
-                {layers
-                  .slice()
-                  .sort((a, b) => b.z - a.z)
-                  .map((l) => (
-                  <div
-                    key={l.id}
-                    className={`flex items-center justify-between px-2 py-1.5 rounded-md border ${activeId === l.id ? 'border-hero-blue/50 bg-hero-blue/10' : 'border-white/10'}`}
+              <div className="flex items-center gap-2 mb-3">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    className={`px-3 py-1.5 rounded-md text-sm border ${activeCategory === cat ? 'border-hero-blue/50 bg-hero-blue/10' : 'border-white/10 hover:bg-white/10'}`}
+                    onClick={() => setActiveCategory(cat)}
                   >
-                    <button
-                      className="text-left text-sm truncate mr-2"
-                      onClick={() => { setActiveId(l.id); if (!l.locked) bringToFront(l.id); }}
-                      title={l.src}
-                      style={{ color: 'var(--foreground)' }}
-                    >
-                      {l.locked ? 'Santa Hat (locked)' : `Layer #${l.id.slice(-5)}`}
-                    </button>
-                    <div className="flex items-center gap-2">
-                      <button className="p-1 rounded-md bg-white/10 hover:bg-white/20 disabled:opacity-50" onClick={() => adjustScale(l.id, 0.1)} title="Zoom in" disabled={!!l.locked}>
-                        <ZoomIn className="w-4 h-4" />
-                      </button>
-                      <button className="p-1 rounded-md bg-white/10 hover:bg-white/20 disabled:opacity-50" onClick={() => adjustScale(l.id, -0.1)} title="Zoom out" disabled={!!l.locked}>
-                        <ZoomOut className="w-4 h-4" />
-                      </button>
-                      <button className="p-1 rounded-md bg-white/10 hover:bg-white/20 disabled:opacity-50" onClick={() => bringToFront(l.id)} title="Bring to front" disabled={!!l.locked}>
-                        <Layers className="w-4 h-4" />
-                      </button>
-                      <button className="p-1 rounded-md bg-white/10 hover:bg-white/20" onClick={() => removeLayer(l.id)} title="Remove layer">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+                    {cat}
+                  </button>
                 ))}
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                {filtered.length === 0 && (
+                  <div className="text-sm text-off-white/60 col-span-2">No items yet.</div>
+                )}
+                {filtered.map((item) => {
+                  const isOn = item.id === 'gm-arm' ? includeGmArm : selectedIds.has(item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      className={`relative rounded-lg border p-2 text-left transition-colors ${isOn ? 'border-hero-blue/60 bg-hero-blue/10' : 'border-white/10 hover:bg-white/10'}`}
+                      onClick={() => toggleSelect(item.id)}
+                      title={item.name}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.src} alt={item.name} className="w-full aspect-square object-contain rounded-md bg-black/30" />
+                      <div className="mt-2 text-xs" style={{ color: 'var(--foreground)' }}>{item.name}</div>
+                      {isOn && <div className="absolute top-2 right-2 text-hero-blue text-xs">Selected</div>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <button className="btn-primary w-full inline-flex items-center justify-center gap-2" onClick={handleDownload}>
-              <Download className="w-5 h-5" /> Download PNG
+            <div className="flex gap-3">
+              <button
+                className="btn-secondary flex-1 inline-flex items-center justify-center gap-2 disabled:opacity-50"
+                onClick={handleGeneratePreview}
+                disabled={!baseSrc || isGenerating}
+              >
+                {isGenerating ? 'Generating...' : 'Generate Preview'}
+              </button>
+              <button
+                className="btn-primary flex-1 inline-flex items-center justify-center gap-2 disabled:opacity-50"
+                onClick={handleDownload}
+                disabled={!baseSrc}
+              >
+                <Download className="w-5 h-5" /> Download PNG
+              </button>
+            </div>
+
+            <button
+              className="w-full inline-flex items-center justify-center gap-2 text-xs opacity-60 hover:opacity-100 transition"
+              onClick={() => setPreviewUrl(null)}
+              disabled={!previewUrl}
+            >
+              Reset preview
             </button>
           </div>
 
-          {/* Stage */}
           <div className="lg:col-span-2">
             <div
-              ref={stageRef}
-              className="relative rounded-xl border border-white/10 bg-black/40 overflow-hidden"
-              style={{ width: '100%', maxWidth: stageSize.w, aspectRatio: `${stageSize.w} / ${stageSize.h}` }}
+              className="relative rounded-xl border border-white/10 overflow-hidden"
+              style={{ width: '100%', aspectRatio: '1 / 1' }}
             >
-              {/* Base image */}
+              {/* Lab backdrop inside the stage */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0"
+                style={{
+                  background:
+                    'radial-gradient(65% 65% at 50% 40%, rgba(10,30,45,0.9), rgba(6,12,20,0.95) 60%, rgba(2,6,11,1) 100%)'
+                }}
+              />
+              <div className="absolute inset-0 pointer-events-none">
+                {/* subtle grid */}
+                <div
+                  className="absolute inset-0 opacity-[0.05]"
+                  style={{
+                    backgroundImage:
+                      'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)',
+                    backgroundSize: '32px 32px'
+                  }}
+                />
+                {/* neon frame */}
+                <div className="absolute inset-2 rounded-xl" style={{ boxShadow: 'inset 0 0 80px rgba(0,255,220,0.08), 0 0 40px rgba(0,200,255,0.06)' }} />
+                {/* smoke wisps over stage */}
+                <div className="absolute -inset-x-1/3 -top-4 h-1/2 opacity-25 blur-2xl" style={{ animation: 'smokeDrift 18s linear infinite', background: 'radial-gradient(50% 50% at 50% 50%, rgba(210,230,240,0.10), transparent 70%)' }} />
+                <div className="absolute -inset-x-1/3 -bottom-4 h-1/2 opacity-2 blur-2xl" style={{ animation: 'smokeDrift 26s linear infinite reverse', background: 'radial-gradient(50% 50% at 50% 50%, rgba(210,230,240,0.08), transparent 70%)' }} />
+              </div>
+
+              {/* Preview or live composition */}
               {baseSrc ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={baseSrc} alt="Base Ape" className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none" />
+                <>
+                  {previewUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={previewUrl} alt="Generated Preview" className="absolute inset-0 w-full h-full object-contain" />
+                  ) : (
+                    <>
+                      {/* Live layered preview before generation */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={baseSrc} alt="Base Ape" className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none" />
+                      {CLOTHES.filter((c) => selectedIds.has(c.id)).map((item) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={item.id}
+                          src={item.src}
+                          alt={item.name}
+                          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+                        />
+                      ))}
+                      {includeGmArm && gmArmPreviewOk && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={getGmArmPath(furColor)}
+                          alt="GM Arm"
+                          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+                        />
+                      )}
+                    </>
+                  )}
+                </>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-off-white/60 text-sm p-4">
-                  Upload your Ape image to start.
+                  Enter a token ID or upload your Ape image to start.
                 </div>
               )}
 
-              {/* Layers */}
-              {layers.map((l) => (
-                <div
-                  key={l.id}
-                  onPointerDown={(e) => { if (!l.locked) beginDrag(l.id, e); }}
-                  className={`absolute ${l.locked ? 'cursor-default' : 'cursor-move'}`}
-                  style={{ left: l.x * displayScale, top: l.y * displayScale, zIndex: l.z }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={l.src}
-                    alt="Layer"
-                    style={{ width: `${Math.max(1, (l.naturalWidth || 0) * l.scale * displayScale)}px`, height: `${Math.max(1, (l.naturalHeight || 0) * l.scale * displayScale)}px` }}
-                    draggable={false}
-                  />
+              {/* Loading overlay */}
+              {isGenerating && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                  <div className="px-4 py-2 rounded-md border border-white/10 bg-black/60 text-off-white/90 text-sm">
+                    Assembling in the workshop...
+                  </div>
                 </div>
-              ))}
+              )}
+
+              {/* Flash effect */}
+              {flashOn && (
+                <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(255,255,255,0.95)', animation: 'flashPop 300ms ease-out forwards' }} />
+              )}
             </div>
             <div className="text-xs text-off-white/60 mt-2">
-              Tip: Drag layers to position. Use the scale buttons in the list. Download merges everything into a single PNG.
+              The lab composes selected clothes as full-size overlays aligned to the base image.
             </div>
           </div>
         </div>
@@ -496,8 +439,20 @@ export default function WardrobePage() {
         </div>
       </div>
       <Footer />
+      {/* Hidden audio element for mechanic workshop sound; place a file at /public/mechanic-workshop.mp3 */}
+      <audio ref={audioRef} src="/mechanic-workshop.mp3" preload="auto" />
+      {/* Local keyframes for smoke and flash */}
+      <style jsx>{`
+        @keyframes smokeDrift {
+          0% { transform: translateX(-10%) translateY(0%); }
+          50% { transform: translateX(10%) translateY(-2%); }
+          100% { transform: translateX(-10%) translateY(0%); }
+        }
+        @keyframes flashPop {
+          0% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
-
-

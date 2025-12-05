@@ -97,12 +97,28 @@ export default function GalleryPage() {
 		// Capture current server-sourced count snapshot (best-effort)
 		const current = items.find(i => i.id === id)?.votes_count ?? 0;
 		try {
-			await fetch('/api/gallery/vote/', {
+			const res = await fetch('/api/gallery/vote/', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ submission_id: id }),
 			});
-			setItems(prev => prev.map(it => (it.id === id ? { ...it, votes_count: (it.votes_count || 0) + 1 } : it)));
+			if (!res.ok) return;
+			let serverCount: number | null = null;
+			try {
+				const data: unknown = await res.json();
+				if (data && typeof data === 'object' && data !== null && 'count' in data) {
+					const c = (data as Record<string, unknown>).count;
+					if (typeof c === 'number') serverCount = c;
+				}
+			} catch {
+				// ignore JSON parse
+			}
+
+			setItems(prev => prev.map(it => {
+				if (it.id !== id) return it;
+				const nextCount = serverCount !== null ? serverCount : (it.votes_count || 0) + 1;
+				return { ...it, votes_count: nextCount };
+			}));
 			// Persist voted id locally to prevent multiple votes from same browser
 			setVotedIds(prev => {
 				const next = new Set(prev);

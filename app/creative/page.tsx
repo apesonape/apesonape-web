@@ -4,7 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
-import { Wand2, ImagePlus, Shirt } from 'lucide-react';
+import { Wand2, ImagePlus, Shirt, Circle, Type, Images, Laugh, QrCode } from 'lucide-react';
 import Nav from '../components/Nav';
 import Footer from '../components/Footer';
 
@@ -49,7 +49,7 @@ export default function CreativeHubPage() {
           </Link>
         </motion.div>
 
-        {/* Banner Generator small card */}
+        {/* Tool cards */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -78,7 +78,71 @@ export default function CreativeHubPage() {
             <Link href="/creative/banners" className="btn-secondary inline-flex items-center w-fit">Open</Link>
           </div>
 
-          {/* Creator Spotlight card removed */}
+          {/* PFP Border */}
+          <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
+            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
+              <Circle className="w-4 h-4" />
+              <span>New</span>
+            </div>
+            <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>PFP Border</h3>
+            <p className="text-sm text-off-white/80 mb-3">Add a ring or rounded border to your PFP and export a square image.</p>
+            <Link href="/creative/pfp-border" className="btn-secondary inline-flex items-center w-fit">Open</Link>
+          </div>
+
+          {/* Meme Maker */}
+          <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
+            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
+              <Type className="w-4 h-4" />
+              <span>New</span>
+            </div>
+            <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Meme Maker</h3>
+            <p className="text-sm text-off-white/80 mb-3">Add classic meme text with outline to any image.</p>
+            <Link href="/creative/meme" className="btn-secondary inline-flex items-center w-fit">Open</Link>
+          </div>
+
+          {/* Collage */}
+          <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
+            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
+              <Images className="w-4 h-4" />
+              <span>New</span>
+            </div>
+            <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Collage</h3>
+            <p className="text-sm text-off-white/80 mb-3">Arrange multiple images into a grid with spacing and export.</p>
+            <Link href="/creative/collage" className="btn-secondary inline-flex items-center w-fit">Open</Link>
+          </div>
+
+          {/* Emote / Emoji Maker */}
+          <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
+            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
+              <Laugh className="w-4 h-4" />
+              <span>New</span>
+            </div>
+            <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Emote / Emoji Maker</h3>
+            <p className="text-sm text-off-white/80 mb-3">Crop/shape and export small transparent emotes.</p>
+            <Link href="/creative/emotes" className="btn-secondary inline-flex items-center w-fit">Open</Link>
+          </div>
+
+          {/* Sticker Pack Builder */}
+          <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
+            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
+              <Images className="w-4 h-4" />
+              <span>New</span>
+            </div>
+            <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>Sticker Pack</h3>
+            <p className="text-sm text-off-white/80 mb-3">Batch export images with padding and shadow for sticker packs.</p>
+            <Link href="/creative/stickers" className="btn-secondary inline-flex items-center w-fit">Open</Link>
+          </div>
+
+          {/* QR / Badge Maker */}
+          <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
+            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">
+              <QrCode className="w-4 h-4" />
+              <span>New</span>
+            </div>
+            <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--foreground)' }}>QR / Badge</h3>
+            <p className="text-sm text-off-white/80 mb-3">Generate branded QR codes with a caption badge.</p>
+            <Link href="/creative/qr" className="btn-secondary inline-flex items-center w-fit">Open</Link>
+          </div>
 
           <div className="group rounded-xl border border-white/10 bg-black/30 hover:bg-black/40 transition-colors p-5 flex flex-col">
             <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-hero-blue/10 border border-hero-blue/30 text-hero-blue text-xs w-fit mb-3">

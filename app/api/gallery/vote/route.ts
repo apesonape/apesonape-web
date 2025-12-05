@@ -1,7 +1,7 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/lib/supabase';
+import { getSupabaseServerClient, getSupabaseServiceClient } from '@/lib/supabase';
 import crypto from 'crypto';
 
 function getClientIp(req: NextRequest): string {
@@ -16,7 +16,9 @@ export async function POST(req: NextRequest) {
 		const submission_id = body?.submission_id as number | undefined;
 		if (!submission_id) return NextResponse.json({ error: 'Missing submission_id' }, { status: 400 });
 
-		const supabase = getSupabaseServerClient();
+		// Prefer service role (server-only) to bypass RLS for controlled write
+		const svc = getSupabaseServiceClient();
+		const supabase = svc || getSupabaseServerClient();
 		const ip = getClientIp(req);
 		// Permanently unique per IP + submission (not per-day)
 		const ipHash = crypto.createHash('sha256').update(`${ip}:${submission_id}`).digest('hex');
@@ -41,11 +43,19 @@ export async function POST(req: NextRequest) {
 			.from('gallery_votes')
 			.select('*', { count: 'exact', head: true })
 			.eq('submission_id', submission_id);
-		if (!countErr && typeof count === 'number') {
-			await supabase.from('gallery_submissions').update({ votes_count: count }).eq('id', submission_id);
+		if (countErr || typeof count !== 'number') {
+			return NextResponse.json({ error: countErr?.message || 'Failed to count votes' }, { status: 500 });
 		}
 
-		return NextResponse.json({ ok: true });
+		const { error: updateErr } = await supabase
+			.from('gallery_submissions')
+			.update({ votes_count: count })
+			.eq('id', submission_id);
+		if (updateErr) {
+			return NextResponse.json({ error: updateErr.message }, { status: 500 });
+		}
+
+		return NextResponse.json({ ok: true, count });
 	} catch (e: unknown) {
 		const msg = e instanceof Error ? e.message : 'Unknown error';
 		return NextResponse.json({ error: msg }, { status: 500 });
