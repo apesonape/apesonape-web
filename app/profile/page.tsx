@@ -1,8 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import React, { useMemo, useState } from 'react';
 import Nav from '../components/Nav';
 import Footer from '../components/Footer';
 import { usePrivy } from '@privy-io/react-auth';
@@ -11,63 +10,9 @@ import SafeImage from '../components/SafeImage';
 
 type PrivyTwitter = { name?: string; username?: string; profilePictureUrl?: string };
 type PrivyUser = { id?: string; twitter?: PrivyTwitter };
-import ShareButton from '../components/ShareButton';
-
-interface Achievement {
-	achievement_code: string;
-	title: string;
-	description: string;
-	badge_icon: string;
-	bananas_reward: number;
-	category: string;
-	earned: boolean;
-	earned_at: string | null;
-}
-
-interface Quest {
-	quest_code: string;
-	title: string;
-	description: string;
-	quest_icon: string;
-	bananas_reward: number;
-	category: string;
-	progress: number;
-	target: number;
-	status: string;
-}
-
-interface LeaderboardEntry {
-	rank: number;
-	userId: string;
-	displayName: string;
-	username: string | null;
-	avatarUrl: string | null;
-	bananas: number;
-}
-
 export default function ProfilePage() {
 	const { user, linkTwitter } = (usePrivy() as unknown) as { user?: PrivyUser; linkTwitter?: () => Promise<void> };
 	const glyph = (useGlyph() as unknown) as { logout?: () => Promise<void> };
-
-	// Gamification removed
-	const [loading, setLoading] = useState<boolean>(false);
-	// Profile data (loaded from Supabase; Twitter only used on first sign-in fallback)
-	const [profileName, setProfileName] = useState<string>('');
-	const [profileHandle, setProfileHandle] = useState<string>('');
-
-	// Gamification removed: no remote fetch
-	useEffect(() => {
-		(async () => {
-			try {
-				if (!user?.id) return;
-				setLoading(true);
-			} catch (err) {
-				console.error('Error fetching profile data:', err);
-			} finally {
-				setLoading(false);
-			}
-		})();
-	}, [user?.id]);
 
 	// Read from Privy user (populated by the automatic sessions call)
 	const twitter = useMemo(() => user?.twitter || null, [user]);
@@ -75,8 +20,8 @@ export default function ProfilePage() {
 	const name: string = twitter?.name || '';
 	const username: string = twitter?.username || '';
 	const twitterAvatarUrl: string | null = twitter?.profilePictureUrl || null;
-	const displayName = profileName || name;
-	const displayHandle = profileHandle || username;
+	const displayName = name;
+	const displayHandle = username;
 
 	const [customAvatarUrl, setCustomAvatarUrl] = useState<string | null>(null);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);

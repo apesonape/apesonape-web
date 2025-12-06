@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
 		const body = await req.json().catch(() => ({}));
 		const submission_id = body?.submission_id as number | undefined;
 		const likerId = (body?.likerId as string | undefined) || '';
-		const authorId = (body?.authorId as string | undefined) || '';
 		if (!submission_id) return NextResponse.json({ error: 'Missing submission_id' }, { status: 400 });
 
 		// Prefer service role (server-only) to bypass RLS for controlled write
