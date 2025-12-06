@@ -1,12 +1,15 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Nav from '../../components/Nav';
 import Footer from '../../components/Footer';
 import { Download, Shirt, Upload } from 'lucide-react';
+import { useToolTracking } from '@/app/hooks/useToolTracking';
 import { magicEdenAPI } from '@/lib/magic-eden';
+import SafeImage from '@/app/components/SafeImage';
 
 type ClothingItem = {
   id: string;
@@ -29,7 +32,12 @@ const CATEGORIES: Array<ClothingItem['category']> = ['Hats', 'Tops', 'Accessorie
 
 const OUTPUT_SIZE = 4096;
 
+const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
 export default function WardrobePage() {
+  // Track tool usage for gamification
+  useToolTracking('wardrobe');
+
   const [tokenId, setTokenId] = useState<string>('');
   const [loadingNft, setLoadingNft] = useState(false);
   const [baseSrc, setBaseSrc] = useState<string>('');
@@ -41,10 +49,10 @@ export default function WardrobePage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [includeGmArm, setIncludeGmArm] = useState<boolean>(true);
-  const FUR_COLORS = [
-    'Black','Blue','Brown','Cheetah','Cream','Dark Brown','Death Bot','Dmt','Golden Brown','Gray','Noise','Pink','Red','Robot','Solid Gold','Tan','Trippy','White','Zombie'
-  ] as const;
-  type FurColor = typeof FUR_COLORS[number];
+  const furColors = useMemo(() => (
+    ['Black','Blue','Brown','Cheetah','Cream','Dark Brown','Death Bot','Dmt','Golden Brown','Gray','Noise','Pink','Red','Robot','Solid Gold','Tan','Trippy','White','Zombie'] as const
+  ), []);
+  type FurColor = typeof furColors[number];
   const [furColor, setFurColor] = useState<FurColor>('Brown');
 
   const toggleSelect = useCallback((id: string) => {
@@ -94,7 +102,7 @@ export default function WardrobePage() {
       setBaseSrc(nft.image);
       setPreviewUrl(null);
       const furTrait = nft.traits.find((t) => t.name.toLowerCase() === 'fur');
-      if (furTrait && FUR_COLORS.includes(furTrait.value as FurColor)) {
+      if (furTrait && furColors.includes(furTrait.value as FurColor)) {
         setFurColor(furTrait.value as FurColor);
       }
     } catch (err) {
@@ -103,7 +111,7 @@ export default function WardrobePage() {
     } finally {
       setLoadingNft(false);
     }
-  }, [tokenId, loadingNft]);
+  }, [tokenId, loadingNft, furColors]);
 
   // Attempt to prime audio on first interaction to avoid autoplay restrictions
   useEffect(() => {
@@ -126,8 +134,7 @@ export default function WardrobePage() {
   }, []);
 
   // Build GM arm asset path (PNG overlays to be added later by fur color)
-  const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  const getGmArmPath = (fur: FurColor) => `/wardrobe/gm-arm/${slugify(fur)}.png`;
+  const getGmArmPath = useCallback((fur: FurColor) => `/wardrobe/gm-arm/${slugify(fur)}.png`, []);
   const [gmArmPreviewOk, setGmArmPreviewOk] = useState(false);
   useEffect(() => {
     if (!includeGmArm) { setGmArmPreviewOk(false); return; }
@@ -136,7 +143,7 @@ export default function WardrobePage() {
     img.onload = () => setGmArmPreviewOk(true);
     img.onerror = () => setGmArmPreviewOk(false);
     img.src = url;
-  }, [includeGmArm, furColor]);
+  }, [includeGmArm, furColor, getGmArmPath]);
 
   const compose = useCallback(async (): Promise<string | null> => {
     if (!baseSrc) return null;
@@ -173,7 +180,7 @@ export default function WardrobePage() {
       }
     }
     return canvas.toDataURL('image/png');
-  }, [baseSrc, selectedIds, includeGmArm, furColor]);
+  }, [baseSrc, selectedIds, includeGmArm, furColor, getGmArmPath]);
 
   const handleGeneratePreview = useCallback(async () => {
     if (!baseSrc || isGenerating) return;
@@ -310,8 +317,7 @@ export default function WardrobePage() {
                       onClick={() => toggleSelect(item.id)}
                       title={item.name}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.src} alt={item.name} className="w-full aspect-square object-contain rounded-md bg-black/30" />
+                      <SafeImage src={item.src} alt={item.name} className="w-full aspect-square object-contain rounded-md bg-black/30" width={512} height={512} unoptimized />
                       <div className="mt-2 text-xs" style={{ color: 'var(--foreground)' }}>{item.name}</div>
                       {isOn && <div className="absolute top-2 right-2 text-hero-blue text-xs">Selected</div>}
                     </button>
@@ -381,28 +387,30 @@ export default function WardrobePage() {
               {baseSrc ? (
                 <>
                   {previewUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={previewUrl} alt="Generated Preview" className="absolute inset-0 w-full h-full object-contain" />
+                    <SafeImage src={previewUrl} alt="Generated Preview" className="absolute inset-0 w-full h-full object-contain" fill unoptimized />
                   ) : (
                     <>
                       {/* Live layered preview before generation */}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={baseSrc} alt="Base Ape" className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none" />
+                      <SafeImage src={baseSrc} alt="Base Ape" className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none" fill unoptimized />
                       {CLOTHES.filter((c) => selectedIds.has(c.id)).map((item) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <SafeImage
                           key={item.id}
                           src={item.src}
                           alt={item.name}
                           className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+                          fill
+                          unoptimized
+                          sizes="100vw"
                         />
                       ))}
                       {includeGmArm && gmArmPreviewOk && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <SafeImage
                           src={getGmArmPath(furColor)}
                           alt="GM Arm"
                           className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+                          fill
+                          unoptimized
+                          sizes="100vw"
                         />
                       )}
                     </>

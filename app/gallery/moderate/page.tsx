@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import SafeImage from '@/app/components/SafeImage';
 
 type UGCItem = {
 	id: number;
@@ -108,8 +109,7 @@ export default function GalleryModeratePage() {
 					<div key={item.id} className="rounded-xl border border-white/20 bg-black/50 p-3 shadow-lg">
 						<div className="rounded-md overflow-hidden mb-3">
 							{item.image_url ? (
-								// Could be image or video; show image element; admins can click through for video
-								<img src={item.image_url} alt={item.title} className="w-full h-52 object-cover" />
+								<SafeImage src={item.image_url} alt={item.title} className="w-full h-52 object-cover" width={400} height={208} unoptimized />
 							) : (
 								<div className="w-full h-52 bg-white/5 flex items-center justify-center text-off-white/60">No media</div>
 							)}

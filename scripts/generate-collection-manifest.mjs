@@ -10,11 +10,11 @@ const projectRoot = path.resolve(__dirname, '..');
 const publicDir = path.join(projectRoot, 'public');
 const outFile = path.join(publicDir, 'collection-manifest.json');
 
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY || process.env.GOOGLE_DRIVE_API_KEY || '';
-const FOLDER_ID = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID || process.env.GOOGLE_DRIVE_FOLDER_ID || '';
+const API_KEY = process.env.GOOGLE_DRIVE_API_KEY || '';
+const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
 
 if (!API_KEY || !FOLDER_ID) {
-  console.error('Missing env: NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY and NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID');
+  console.error('Missing env: GOOGLE_DRIVE_API_KEY and GOOGLE_DRIVE_FOLDER_ID');
   process.exit(1);
 }
 

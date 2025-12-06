@@ -7,6 +7,7 @@ import { Download, ImagePlus, Loader2, Wand2, Plus, Minus, Palette } from 'lucid
 import Nav from '../components/Nav';
 import Footer from '../components/Footer';
 import NextImage from 'next/image';
+import { useToolTracking } from '@/app/hooks/useToolTracking';
 
 type GeneratedItem = {
   id: string;
@@ -823,6 +824,9 @@ async function renderBannerFromNFTGrid(
 }
 
 export default function BannersPage() {
+  // Track tool usage for gamification
+  useToolTracking('banner');
+
   const [nftId, setNftId] = useState('');
   const [loading, setLoading] = useState<'nft' | null>(null);
   const [preview, setPreview] = useState<GeneratedItem | null>(null);

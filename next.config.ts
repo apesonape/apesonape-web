@@ -2,6 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   distDir: 'docs',
+  experimental: {
+    turbo: {
+      resolveAlias: {
+        '@react-native-async-storage/async-storage': './shims/empty.ts',
+        '@solana-program/system': './shims/solana-system.ts',
+        // Allow Privy modules (required by GlyphPrivyProvider)
+      },
+    },
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -67,8 +76,18 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_ME_COLLECTION: process.env.NEXT_PUBLIC_ME_COLLECTION || '0xa6bAbE18F2318D2880DD7dA3126C19536048F8B0',
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'https://apesonape.io',
     NEXT_PUBLIC_APECHAIN_RPC: process.env.NEXT_PUBLIC_APECHAIN_RPC || 'https://rpc.apechain.com/http',
-    NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY || 'AIzaSyAYWncPK-IUIG9nyBE4X7gcgVboCAg3olg',
-    NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID || '1nxjA9Wt_HKQBukh5xc61VOUdLHE6DRvK',
+    NEXT_PUBLIC_GLYPH_PRIVY_APP_ID: process.env.NEXT_PUBLIC_GLYPH_PRIVY_APP_ID || 'clxt9p8e601al6tgmsyhu7j3t',
+    NEXT_PUBLIC_APECHAIN_CHAIN_ID: process.env.NEXT_PUBLIC_APECHAIN_CHAIN_ID || '',
+  },
+  webpack: (config) => {
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@react-native-async-storage/async-storage': require.resolve('./shims/empty.ts'),
+      '@solana-program/system': require.resolve('./shims/solana-system.ts'),
+      // Allow Privy packages for GlyphPrivyProvider
+    };
+    return config;
   },
 };
 

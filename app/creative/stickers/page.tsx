@@ -1,9 +1,12 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import Nav from '../../components/Nav';
 import Footer from '../../components/Footer';
 import { Download } from 'lucide-react';
+import SafeImage from '@/app/components/SafeImage';
+import { useToolTracking } from '@/app/hooks/useToolTracking';
 
 function drawSticker(canvas: HTMLCanvasElement, img: HTMLImageElement, opts: { size: number; padding: number; shadow: boolean; background: 'transparent' | 'white' }) {
 	const ctx = canvas.getContext('2d');
@@ -39,6 +42,9 @@ function drawSticker(canvas: HTMLCanvasElement, img: HTMLImageElement, opts: { s
 }
 
 export default function StickersPage() {
+	// Track tool usage for gamification
+	useToolTracking('sticker');
+
 	const [files, setFiles] = useState<File[]>([]);
 	const [images, setImages] = useState<HTMLImageElement[]>([]);
 	const [size, setSize] = useState(512);
@@ -152,7 +158,7 @@ export default function StickersPage() {
 								<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
 									{previews.map((src, i) => (
 										<div key={i} className="rounded-lg overflow-hidden border border-white/10 bg-black/30 p-2 flex items-center justify-center">
-											<img src={src} alt={`sticker-${i+1}`} className="w-full h-auto object-contain"/>
+											<SafeImage src={src} alt={`sticker-${i+1}`} className="w-full h-auto object-contain" width={512} height={512} unoptimized priority />
 										</div>
 									))}
 								</div>

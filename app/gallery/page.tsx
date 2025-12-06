@@ -2,8 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Heart, Share2, Check } from 'lucide-react';
+import SafeImage from '../components/SafeImage';
+import { useGlyph } from '@use-glyph/sdk-react';
+
+const GallerySubmitControl = dynamic(() => import('../components/GallerySubmitControl'), { ssr: false });
 
 type UGCItem = {
 	id: number;
@@ -28,6 +33,8 @@ function isVideoUrl(url: string | null | undefined): boolean {
 export default function GalleryPage() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
+	const glyph = (useGlyph() as unknown) as { user?: { id?: string } };
+	const userId = glyph?.user?.id || '';
 	const initialCategory = (searchParams.get('category') as 'fan_art' | 'spotlight' | 'all') || 'all';
 	const [items, setItems] = useState<UGCItem[]>([]);
 	const [votedIds, setVotedIds] = useState<Set<number>>(new Set());
@@ -100,7 +107,7 @@ export default function GalleryPage() {
 			const res = await fetch('/api/gallery/vote/', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ submission_id: id }),
+				body: JSON.stringify({ submission_id: id, likerId: userId || undefined }),
 			});
 			if (!res.ok) return;
 			let serverCount: number | null = null;
@@ -183,7 +190,7 @@ export default function GalleryPage() {
 						<option value="top">Top (votes)</option>
 						<option value="new">New</option>
 					</select>
-					<Link href="/gallery/submit" className="btn-primary">Submit</Link>
+					<GallerySubmitControl variant="header" />
 				</div>
 			</div>
 
@@ -199,7 +206,7 @@ export default function GalleryPage() {
 
 			{!loading && !error && items.length === 0 && (
 				<div className="rounded-xl border border-white/10 bg-black/30 p-6 text-off-white/80">
-					No submissions yet. Be the first to <Link className="text-hero-blue underline" href="/gallery/submit">submit your art</Link>.
+					No submissions yet. Be the first to <GallerySubmitControl variant="empty" />.
 				</div>
 			)}
 
@@ -216,7 +223,7 @@ export default function GalleryPage() {
 												<source src={item.image_url || ''} />
 											</video>
 										) : item.image_url ? (
-											<img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
+											<SafeImage src={item.image_url || ''} alt={item.title} className="w-full h-full object-cover" fill />
 										) : (
 											<div className="w-full h-full bg-white/5 flex items-center justify-center text-off-white/60">No media</div>
 										)}

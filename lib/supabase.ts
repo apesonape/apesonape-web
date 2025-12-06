@@ -38,8 +38,8 @@ export function getSupabaseBrowserClient(): SupabaseClient {
 export function getSupabaseServiceClient(): SupabaseClient | null {
 	// Use service role for server-only privileged operations
 	const url = process.env.NEXT_PUBLIC_SUPABASE_URL || PUBLIC_SUPABASE_URL;
-	// Prefer non-reserved env var name. Keep old name as fallback for dev.
-	const serviceKey = process.env.SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+	// Prefer SUPABASE_SERVICE_ROLE_KEY (matches Supabase dashboard/env); keep SERVICE_ROLE_KEY as fallback.
+	const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
 	if (!url || !serviceKey) return null;
 	if (cachedServiceClient) return cachedServiceClient;
 	cachedServiceClient = createClient(url, serviceKey, {

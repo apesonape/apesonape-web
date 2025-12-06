@@ -2,10 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sun, Moon } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from './ThemeProvider';
+
+const AuthNavControls = dynamic(() => import('./AuthNavControls'), { ssr: false });
+const ExtraLinks = dynamic(() => import('./ExtraLinks'), { ssr: false });
+const NotificationBell = dynamic(() => import('./NotificationBell'), { ssr: false });
 
 export default function Nav() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -26,8 +31,6 @@ export default function Nav() {
     { href: '/collection', label: 'Collection' },
     { href: '/sound', label: 'Sound' },
     { href: '/gallery', label: 'Gallery' },
-    { href: '/creative', label: 'Tools' },
-    { href: 'https://arcade.apesonape.io', label: 'Arcade', external: true },
   ];
 
   return (
@@ -59,28 +62,17 @@ export default function Nav() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (
-              link.external ? (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-colors duration-300 font-medium hover:text-hero-blue"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  {link.label}
-                </a>
-              ) : (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="transition-colors duration-300 font-medium hover:text-hero-blue"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  {link.label}
-                </Link>
-              )
+              <Link
+                key={link.href}
+                href={link.href}
+                className="transition-colors duration-300 font-medium hover:text-hero-blue"
+                style={{ color: 'var(--foreground)' }}
+              >
+                {link.label}
+              </Link>
             ))}
+            <ExtraLinks />
+            <NotificationBell />
             
             {/* Theme Toggle */}
             <button
@@ -95,14 +87,7 @@ export default function Nav() {
               )}
             </button>
             
-            <a
-              href="https://discord.gg/gVmqW6SExU"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary"
-            >
-              Join Discord
-            </a>
+            <AuthNavControls />
           </div>
 
           {/* Mobile Menu Button */}
@@ -142,39 +127,22 @@ export default function Nav() {
           >
             <div className="px-4 py-6 space-y-4">
               {navLinks.map((link) => (
-                link.external ? (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block transition-colors duration-300 font-medium py-2 hover:text-hero-blue"
-                    style={{ color: 'var(--foreground)' }}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {link.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="block transition-colors duration-300 font-medium py-2 hover:text-hero-blue"
-                    style={{ color: 'var(--foreground)' }}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {link.label}
-                  </Link>
-                )
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="block transition-colors duration-300 font-medium py-2 hover:text-hero-blue"
+                  style={{ color: 'var(--foreground)' }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
               ))}
-              <a
-                href="https://discord.gg/gVmqW6SExU"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full text-center btn-primary"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Join Discord
-              </a>
+              <div className="flex flex-col gap-2">
+                <ExtraLinks />
+                <div className="flex justify-center">
+                  <AuthNavControls />
+                </div>
+              </div>
             </div>
           </motion.div>
         )}

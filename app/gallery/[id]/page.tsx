@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { getSupabaseServerClient } from '@/lib/supabase';
+import SafeImage from '@/app/components/SafeImage';
 
 // Static export compatibility: declare empty static params
 export const dynamic = 'force-static';
@@ -68,7 +69,7 @@ export default async function GalleryItemPage({ params }: Props) {
 							isVideo ? (
 								<video className="w-full h-auto" src={item.image_url} controls playsInline />
 							) : (
-								<img src={item.image_url} alt={item.title} className="w-full h-auto object-contain" />
+								<SafeImage src={item.image_url || ''} alt={item.title} className="w-full h-auto object-contain" width={1200} height={900} unoptimized />
 							)
 						) : (
 							<div className="w-full aspect-square bg-white/5"></div>

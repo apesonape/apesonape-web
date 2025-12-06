@@ -14,28 +14,51 @@ export async function POST(req: NextRequest) {
 	try {
 		const body = await req.json().catch(() => ({}));
 		const submission_id = body?.submission_id as number | undefined;
+		const likerId = (body?.likerId as string | undefined) || '';
 		if (!submission_id) return NextResponse.json({ error: 'Missing submission_id' }, { status: 400 });
 
 		// Prefer service role (server-only) to bypass RLS for controlled write
 		const svc = getSupabaseServiceClient();
 		const supabase = svc || getSupabaseServerClient();
 		const ip = getClientIp(req);
-		// Permanently unique per IP + submission (not per-day)
-		const ipHash = crypto.createHash('sha256').update(`${ip}:${submission_id}`).digest('hex');
+		
+		// Create unique identifier: if logged in, use userId + submission_id, else use IP + submission_id
+		const uniqueKey = likerId ? `user:${likerId}:${submission_id}` : `ip:${ip}:${submission_id}`;
+		const ipHash = crypto.createHash('sha256').update(uniqueKey).digest('hex');
+		
 		// Backward-compatible with schema unique (submission_id, voter_ip_hash, day): use constant day
 		const day = 'alltime';
 
-		const { error: insertErr } = await supabase.from('gallery_votes').insert({
-			submission_id,
-			voter_ip_hash: ipHash,
-			day,
-		});
-		if (insertErr) {
-			// Ignore duplicates (unique constraint) and proceed to recalc count
-			const msg = `${insertErr.message || ''}`.toLowerCase();
-			const isDuplicate = msg.includes('duplicate') || msg.includes('unique') || msg.includes('already exists');
-			if (!isDuplicate) {
-				return NextResponse.json({ error: insertErr.message }, { status: 400 });
+		// Check if user already voted (prevents duplicate likes)
+		const { data: existingVote } = await supabase
+			.from('gallery_votes')
+			.select('id')
+			.eq('submission_id', submission_id)
+			.eq('voter_ip_hash', ipHash)
+			.eq('day', day)
+			.single();
+
+		let isNewVote = false;
+		if (existingVote) {
+			// User already voted, return current count without inserting
+			console.log('Duplicate vote prevented:', { submission_id, likerId, ip });
+		} else {
+			// Insert new vote
+			const { error: insertErr } = await supabase.from('gallery_votes').insert({
+				submission_id,
+				voter_ip_hash: ipHash,
+				day,
+			});
+			
+			if (insertErr) {
+				// Ignore duplicates (unique constraint) - race condition
+				const msg = `${insertErr.message || ''}`.toLowerCase();
+				const isDuplicate = msg.includes('duplicate') || msg.includes('unique') || msg.includes('already exists');
+				if (!isDuplicate) {
+					return NextResponse.json({ error: insertErr.message }, { status: 400 });
+				}
+			} else {
+				isNewVote = true;
 			}
 		}
 
@@ -55,7 +78,7 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: updateErr.message }, { status: 500 });
 		}
 
-		return NextResponse.json({ ok: true, count });
+		return NextResponse.json({ ok: true, count, alreadyVoted: !isNewVote });
 	} catch (e: unknown) {
 		const msg = e instanceof Error ? e.message : 'Unknown error';
 		return NextResponse.json({ error: msg }, { status: 500 });

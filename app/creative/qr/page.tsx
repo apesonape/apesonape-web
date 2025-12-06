@@ -1,9 +1,12 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Nav from '../../components/Nav';
 import Footer from '../../components/Footer';
 import { Download, Type } from 'lucide-react';
+import SafeImage from '@/app/components/SafeImage';
+import { useToolTracking } from '@/app/hooks/useToolTracking';
 
 async function loadQrImage(data: string, size: number, color: string, bgColor: string, margin: number): Promise<HTMLImageElement> {
 	const hex = (s: string) => s.replace('#', '');
@@ -78,6 +81,9 @@ function drawQrBadge(
 }
 
 export default function QrBadgePage() {
+	// Track tool usage for gamification
+	useToolTracking('qr');
+
 	const [text, setText] = useState('https://apesonape.io');
 	const [size, setSize] = useState(1024);
 	const [fg, setFg] = useState('#000000');
@@ -191,7 +197,7 @@ export default function QrBadgePage() {
 							<div className="relative w-full overflow-hidden rounded-lg glass-dark p-6 flex items-center justify-center">
 								<canvas ref={canvasRef} className="hidden"/>
 								{preview ? (
-									<img src={preview} alt="Preview" className="w-full h-auto rounded-lg border border-white/10 object-contain bg-black/20" />
+									<SafeImage src={preview} alt="Preview" className="w-full h-auto rounded-lg border border-white/10 object-contain bg-black/20" width={600} height={600} unoptimized priority />
 								) : (
 									<div className="aspect-square w-full flex items-center justify-center text-off-white/60 text-sm bg-[linear-gradient(45deg,rgba(255,255,255,0.04)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.04)_50%,rgba(255,255,255,0.04)_75%,transparent_75%,transparent)] bg-[length:20px_20px] rounded">
 										Generating QR...
