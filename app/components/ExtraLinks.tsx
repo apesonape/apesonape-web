@@ -25,9 +25,8 @@ export default function ExtraLinks() {
 		let cancelled = false;
 		(async () => {
 			if (!isSignedIn) { setHasAccess(false); return; }
-			const chainIdRaw = process.env.NEXT_PUBLIC_APECHAIN_CHAIN_ID || '';
-			const parsed = Number(chainIdRaw);
-			const chainId = Number.isFinite(parsed) ? parsed : undefined;
+			// Hardcoded per request (was env NEXT_PUBLIC_APECHAIN_CHAIN_ID)
+			const chainId = 33139;
 			const res = await checkTokenGate({
 				contractAddress: '0xa6babe18f2318d2880dd7da3126c19536048f8b0',
 				includeDelegates: true,
