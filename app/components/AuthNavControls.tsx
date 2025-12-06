@@ -27,9 +27,8 @@ export default function AuthNavControls() {
 	const attemptGate = useCallback(async () => {
 		setCheckingGate(true);
 		try {
-			const chainIdRaw = process.env.NEXT_PUBLIC_APECHAIN_CHAIN_ID || '';
-			const parsed = Number(chainIdRaw);
-			const chainId = Number.isFinite(parsed) ? parsed : undefined;
+			// Hardcoded per request (was env NEXT_PUBLIC_APECHAIN_CHAIN_ID)
+			const chainId = 33139;
 
 			let allowed = false;
 			for (let i = 0; i < 8; i++) {

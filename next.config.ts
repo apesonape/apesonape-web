@@ -76,8 +76,10 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_ME_COLLECTION: process.env.NEXT_PUBLIC_ME_COLLECTION || '0xa6bAbE18F2318D2880DD7dA3126C19536048F8B0',
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'https://apesonape.io',
     NEXT_PUBLIC_APECHAIN_RPC: process.env.NEXT_PUBLIC_APECHAIN_RPC || 'https://rpc.apechain.com/http',
-    NEXT_PUBLIC_GLYPH_PRIVY_APP_ID: process.env.NEXT_PUBLIC_GLYPH_PRIVY_APP_ID || 'clxt9p8e601al6tgmsyhu7j3t',
-    NEXT_PUBLIC_APECHAIN_CHAIN_ID: process.env.NEXT_PUBLIC_APECHAIN_CHAIN_ID || '',
+    // Hardcoded per request (was env-driven)
+    NEXT_PUBLIC_GLYPH_PRIVY_APP_ID: 'cmit1t84p00nllb0c3yzjz8d8',
+    NEXT_PUBLIC_GLYPH_APP_ID: 'cly38x0w10ac945q9yg9sm71i',
+    NEXT_PUBLIC_APECHAIN_CHAIN_ID: '33139',
   },
   webpack: (config) => {
     config.resolve = config.resolve || {};

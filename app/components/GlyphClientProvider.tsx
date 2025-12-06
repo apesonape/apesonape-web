@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-	import { GlyphPrivyProvider } from '@use-glyph/sdk-react';
-	import { Chain } from 'viem';
-	import { mainnet } from 'viem/chains';
+import { GlyphPrivyProvider } from '@use-glyph/sdk-react';
+import { Chain } from 'viem';
+import { mainnet } from 'viem/chains';
 
 export default function GlyphClientProvider({ children }: { children: React.ReactNode }) {
-	const appId = process.env.NEXT_PUBLIC_GLYPH_PRIVY_APP_ID || process.env.NEXT_PUBLIC_PRIVY_APP_ID || '';
+	// Hardcoded per request (was env NEXT_PUBLIC_GLYPH_PRIVY_APP_ID)
+	const appId = 'cmit1t84p00nllb0c3yzjz8d8';
 	const supportedChains: [Chain, ...Chain[]] = [mainnet];
 
 	// Client-only provider wrapper per Glyph docs
