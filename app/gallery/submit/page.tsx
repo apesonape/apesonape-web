@@ -3,12 +3,15 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
+import HolderOnly from '@/app/components/HolderOnly';
+import SafeImage from '@/app/components/SafeImage';
 
 function isVideo(file: File | null) {
 	return !!file && file.type.startsWith('video/');
 }
 
 export default function GallerySubmitPage() {
+
 	const [title, setTitle] = useState('');
 	const [author, setAuthor] = useState('');
 	const [wallet, setWallet] = useState('');
@@ -83,15 +86,16 @@ export default function GallerySubmitPage() {
 					category,
 				}),
 			});
-			const json = await res.json();
-			if (!res.ok) throw new Error(json?.error || 'Failed to submit');
-			setDoneId(json.id ?? null);
-			setTitle('');
-			setAuthor('');
-			setWallet('');
-			onFileChange(null);
-			setArtUrl('');
-			setTwitterUrl('');
+		const json = await res.json();
+		if (!res.ok) throw new Error(json?.error || 'Failed to submit');
+		setDoneId(json.id ?? null);
+		setTitle('');
+		setAuthor('');
+		setWallet('');
+		onFileChange(null);
+		setArtUrl('');
+		setTwitterUrl('');
+
 		} catch (err: unknown) {
 			setError(err instanceof Error ? err.message : 'Failed to submit');
 		} finally {
@@ -100,6 +104,7 @@ export default function GallerySubmitPage() {
 	};
 
 	return (
+		<HolderOnly>
 		<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 			<div className="mb-6 flex items-center justify-between">
 				<h1 className="text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>Submit to Gallery</h1>
@@ -149,7 +154,7 @@ export default function GallerySubmitPage() {
 								isVideo(file) ? (
 									<video className="max-h-56 w-auto" src={preview} controls playsInline />
 								) : (
-									<img src={preview} alt="preview" className="max-h-56 w-auto object-contain" />
+									<SafeImage src={preview} alt="preview" className="max-h-56 w-auto object-contain" width={400} height={224} unoptimized />
 								)
 							) : (
 								<div className="text-off-white/50 text-sm">No media selected</div>
@@ -186,6 +191,7 @@ export default function GallerySubmitPage() {
 				{error && <p className="text-red-400">{error}</p>}
 			</form>
 		</div>
+		</HolderOnly>
 	);
 }
 

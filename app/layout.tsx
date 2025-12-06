@@ -5,6 +5,8 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import SoundCloudPlayer from "./components/SoundCloudPlayer";
 import HolidayDecor from "./components/HolidayDecor";
 import HolidayPopup from "./components/HolidayPopup";
+import GlyphClientProvider from "./components/GlyphClientProvider";
+import NotificationToast from "./components/NotificationToast";
 
 const raleway = Raleway({
   variable: "--font-raleway",
@@ -92,7 +94,10 @@ export default function RootLayout({
         <ThemeProvider>
           {holiday === 'christmas' ? <HolidayDecor /> : null}
           {holiday === 'christmas' ? <HolidayPopup /> : null}
-          {children}
+          <GlyphClientProvider>
+            {children}
+            <NotificationToast />
+          </GlyphClientProvider>
           <SoundCloudPlayer />
         </ThemeProvider>
       </body>

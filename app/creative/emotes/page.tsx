@@ -1,9 +1,12 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import Nav from '../../components/Nav';
 import Footer from '../../components/Footer';
 import { Download, Circle, Square, Wand2 } from 'lucide-react';
+import SafeImage from '@/app/components/SafeImage';
+import { useToolTracking } from '@/app/hooks/useToolTracking';
 
 type Shape = 'square' | 'circle' | 'rounded';
 
@@ -88,6 +91,9 @@ function drawEmote(
 }
 
 export default function EmotesPage() {
+	// Track tool usage for gamification
+	useToolTracking('emote');
+
 	const [image, setImage] = useState<HTMLImageElement | null>(null);
 	const [size, setSize] = useState(128);
 	const [shape, setShape] = useState<Shape>('circle');
@@ -190,7 +196,7 @@ export default function EmotesPage() {
 							<div className="relative w-full overflow-hidden rounded-lg glass-dark p-6 flex items-center justify-center">
 								<canvas ref={canvasRef} className="hidden"/>
 								{preview ? (
-									<img src={preview} alt="Preview" className="w-40 h-40 rounded-lg border border-white/10 object-contain bg-black/20" />
+									<SafeImage src={preview} alt="Preview" className="w-40 h-40 rounded-lg border border-white/10 object-contain bg-black/20" width={160} height={160} unoptimized />
 								) : (
 									<div className="aspect-square w-40 flex items-center justify-center text-off-white/60 text-sm bg-[linear-gradient(45deg,rgba(255,255,255,0.04)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.04)_50%,rgba(255,255,255,0.04)_75%,transparent_75%,transparent)] bg-[length:20px_20px] rounded">
 										Upload an image to start.

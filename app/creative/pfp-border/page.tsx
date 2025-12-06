@@ -1,9 +1,12 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import Nav from '../../components/Nav';
 import Footer from '../../components/Footer';
 import { Download, Circle, Square, Badge } from 'lucide-react';
+import SafeImage from '@/app/components/SafeImage';
+import { useToolTracking } from '@/app/hooks/useToolTracking';
 
 type Shape = 'circle' | 'rounded';
 
@@ -20,11 +23,12 @@ function drawPfp(
 		badgeText?: string;
 		badgeBg?: string;
 		badgeTextColor?: string;
+		badgeFontPx?: number;
 	}
 ) {
 	const ctx = canvas.getContext('2d');
 	if (!ctx) return;
-	const { size, shape, radius, ringColor, ringWidth, bgColor, badgeText, badgeBg, badgeTextColor } = opts;
+	const { size, shape, radius, ringColor, ringWidth, bgColor, badgeText, badgeBg, badgeTextColor, badgeFontPx } = opts;
 	canvas.width = size;
 	canvas.height = size;
 
@@ -101,7 +105,8 @@ function drawPfp(
 	if ((badgeText || '').trim()) {
 		const padX = 14;
 		const padY = 8;
-		const fontPx = Math.min(48, Math.max(18, Math.round(size * 0.026)));
+		const computed = Math.round(size * 0.026);
+		const fontPx = Math.min(128, Math.max(12, Math.round(badgeFontPx ?? computed)));
 		ctx.font = `700 ${fontPx}px system-ui, Segoe UI, Arial`;
 		ctx.textBaseline = 'middle';
 		const label = String(badgeText);
@@ -132,6 +137,9 @@ function drawPfp(
 }
 
 export default function PfpBorderPage() {
+	// Track tool usage for gamification
+	useToolTracking('pfp_border');
+
 	const [image, setImage] = useState<HTMLImageElement | null>(null);
 	const [size, setSize] = useState(1024);
 	const [shape, setShape] = useState<Shape>('circle');
@@ -142,14 +150,15 @@ export default function PfpBorderPage() {
 	const [badgeText, setBadgeText] = useState('');
 	const [badgeBg, setBadgeBg] = useState('#111827');
 	const [badgeTextColor, setBadgeTextColor] = useState('#ffffff');
+	const [badgeFontPx, setBadgeFontPx] = useState<number>(28);
 
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const preview = useMemo(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return '';
-		drawPfp(canvas, image, { size, shape, radius, ringColor, ringWidth, bgColor, badgeText, badgeBg, badgeTextColor });
+		drawPfp(canvas, image, { size, shape, radius, ringColor, ringWidth, bgColor, badgeText, badgeBg, badgeTextColor, badgeFontPx });
 		return canvas.toDataURL('image/png');
-	}, [image, size, shape, radius, ringColor, ringWidth, bgColor, badgeText, badgeBg, badgeTextColor]);
+	}, [image, size, shape, radius, ringColor, ringWidth, bgColor, badgeText, badgeBg, badgeTextColor, badgeFontPx]);
 
 	const onFile = useCallback((file: File | null) => {
 		if (!file) { setImage(null); return; }
@@ -257,6 +266,19 @@ export default function PfpBorderPage() {
 										className="mt-2 h-8 w-full bg-transparent border border-white/10 rounded"/>
 								</label>
 							</div>
+							<div className="grid grid-cols-1 gap-3">
+								<label className="text-xs text-off-white/70">Badge Font Size ({badgeFontPx}px)
+									<input
+										type="range"
+										min={12}
+										max={128}
+										step={1}
+										value={badgeFontPx}
+										onChange={(e) => setBadgeFontPx(parseInt(e.target.value))}
+										className="mt-2 w-full"
+									/>
+								</label>
+							</div>
 						</div>
 					</div>
 
@@ -278,7 +300,7 @@ export default function PfpBorderPage() {
 							<div className="relative w-full overflow-hidden rounded-lg glass-dark p-6 flex items-center justify-center">
 								<canvas ref={canvasRef} className="hidden" />
 								{preview ? (
-									<img src={preview} alt="Preview" className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 rounded-lg border border-white/10 object-contain bg-black/20" />
+									<SafeImage src={preview} alt="Preview" className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 rounded-lg border border-white/10 object-contain bg-black/20" width={384} height={384} unoptimized />
 								) : (
 									<div className="aspect-square w-64 sm:w-80 md:w-96 flex items-center justify-center text-off-white/60 text-sm bg-[linear-gradient(45deg,rgba(255,255,255,0.04)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.04)_50%,rgba(255,255,255,0.04)_75%,transparent_75%,transparent)] bg-[length:20px_20px] rounded">
 										Upload an image to start.

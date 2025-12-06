@@ -1,9 +1,12 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import Nav from '../../components/Nav';
 import Footer from '../../components/Footer';
 import { Download } from 'lucide-react';
+import SafeImage from '@/app/components/SafeImage';
+import { useToolTracking } from '@/app/hooks/useToolTracking';
 
 type Layout = '2x2' | '3x3' | '3x2' | '4x3';
 
@@ -66,6 +69,9 @@ function drawCollage(
 }
 
 export default function CollagePage() {
+	// Track tool usage for gamification
+	useToolTracking('collage');
+
 	const [files, setFiles] = useState<File[]>([]);
 	const [images, setImages] = useState<HTMLImageElement[]>([]);
 	const [layout, setLayout] = useState<Layout>('3x3');
@@ -188,7 +194,7 @@ export default function CollagePage() {
 							<div className="relative w-full overflow-hidden rounded-lg glass-dark p-6 flex items-center justify-center">
 								<canvas ref={canvasRef} className="hidden" />
 								{preview ? (
-									<img src={preview} alt="Preview" className="w-full h-auto rounded-lg border border-white/10 object-contain bg-black/20" />
+									<SafeImage src={preview} alt="Preview" className="w-full h-auto rounded-lg border border-white/10 object-contain bg-black/20" width={800} height={600} unoptimized />
 								) : (
 									<div className="aspect-video w-full flex items-center justify-center text-off-white/60 text-sm bg-[linear-gradient(45deg,rgba(255,255,255,0.04)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.04)_50%,rgba(255,255,255,0.04)_75%,transparent_75%,transparent)] bg-[length:20px_20px] rounded">
 										Add multiple images to start.
